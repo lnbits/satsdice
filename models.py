@@ -109,7 +109,7 @@ class CreateSatsDiceLink(BaseModel):
     max_bet: str = Query(None)
     multiplier: float = Query(0)
     chance: float = Query(0)
-    haircut: int = Query(0)
+    haircut: float = Query(0)
 
 
 class CreateSatsDicePayment(BaseModel):
