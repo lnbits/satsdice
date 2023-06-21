@@ -33,7 +33,7 @@ async def index(request: Request, user: User = Depends(check_user_exists)):
 
 
 @satsdice_ext.get("/{link_id}", response_class=HTMLResponse)
-async def display(request: Request, link_id: str = Query(None)):
+async def display(request: Request, link_id: str):
     link = await get_satsdice_pay(link_id)
     if not link:
         raise HTTPException(
@@ -58,7 +58,7 @@ async def display(request: Request, link_id: str = Query(None)):
     response_class=HTMLResponse,
 )
 async def displaywin(
-    request: Request, link_id: str = Query(None), payment_hash: str = Query(None)
+    request: Request, link_id: str, payment_hash: str
 ):
     satsdicelink = await get_satsdice_pay(link_id)
     if not satsdicelink:
