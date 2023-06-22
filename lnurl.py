@@ -24,7 +24,7 @@ from .models import CreateSatsDicePayment
     response_class=HTMLResponse,
     name="satsdice.lnurlp_response",
 )
-async def api_lnurlp_response(req: Request, link_id: str = Query(None)):
+async def api_lnurlp_response(req: Request, link_id: str):
     link = await get_satsdice_pay(link_id)
     if not link:
         raise HTTPException(
@@ -46,7 +46,7 @@ async def api_lnurlp_response(req: Request, link_id: str = Query(None)):
     name="satsdice.api_lnurlp_callback",
 )
 async def api_lnurlp_callback(
-    req: Request, link_id: str = Query(None), amount: str = Query(None)
+    req: Request, link_id: str, amount: str = Query(None)
 ):
     link = await get_satsdice_pay(link_id)
     if not link:
@@ -103,7 +103,7 @@ async def api_lnurlp_callback(
     response_class=HTMLResponse,
     name="satsdice.lnurlw_response",
 )
-async def api_lnurlw_response(req: Request, unique_hash: str = Query(None)):
+async def api_lnurlw_response(req: Request, unique_hash: str):
     link = await get_satsdice_withdraw_by_hash(unique_hash)
 
     if not link:
@@ -133,7 +133,7 @@ async def api_lnurlw_response(req: Request, unique_hash: str = Query(None)):
     name="satsdice.api_lnurlw_callback",
 )
 async def api_lnurlw_callback(
-    unique_hash: str = Query(None),
+    unique_hash: str,
     pr: str = Query(None),
 ):
 

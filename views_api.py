@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Optional
 
 from fastapi import Depends, Query, Request
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
@@ -47,7 +48,7 @@ async def api_links(
 
 @satsdice_ext.get("/api/v1/links/{link_id}")
 async def api_link_retrieve(
-    link_id: str = Query(None), wallet: WalletTypeInfo = Depends(get_key_type)
+    link_id: str, wallet: WalletTypeInfo = Depends(get_key_type)
 ):
     link = await get_satsdice_pay(link_id)
 
@@ -68,8 +69,8 @@ async def api_link_retrieve(
 @satsdice_ext.put("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_link_create_or_update(
     data: CreateSatsDiceLink,
+    link_id: Optional[str],
     wallet: WalletTypeInfo = Depends(get_key_type),
-    link_id: str = Query(None),
 ):
     if data.min_bet > data.max_bet:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
@@ -96,8 +97,8 @@ async def api_link_create_or_update(
 
 @satsdice_ext.delete("/api/v1/links/{link_id}")
 async def api_link_delete(
+    link_id: str,
     wallet: WalletTypeInfo = Depends(get_key_type),
-    link_id: str = Query(None),
 ):
     link = await get_satsdice_pay(link_id)
     if not link:
@@ -122,8 +123,8 @@ async def api_link_delete(
     "/api/v1/withdraws/{the_hash}/{lnurl_id}", dependencies=[Depends(get_key_type)]
 )
 async def api_withdraw_hash_retrieve(
-    lnurl_id: str = Query(None),
-    the_hash: str = Query(None),
+    the_hash: str,
+    lnurl_id: str,
 ):
     hashCheck = await get_withdraw_hash_checkw(the_hash, lnurl_id)
     return hashCheck
