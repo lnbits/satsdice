@@ -1,5 +1,4 @@
 from fastapi import APIRouter
-from starlette.staticfiles import StaticFiles
 
 from lnbits.db import Database
 from lnbits.helpers import template_renderer
@@ -11,14 +10,13 @@ satsdice_ext: APIRouter = APIRouter(prefix="/satsdice", tags=["satsdice"])
 satsdice_static_files = [
     {
         "path": "/satsdice/static",
-        "app": StaticFiles(directory="lnbits/extensions/satsdice/static"),
         "name": "satsdice_static",
     }
 ]
 
 
 def satsdice_renderer():
-    return template_renderer(["lnbits/extensions/satsdice/templates"])
+    return template_renderer(["satsdice/templates"])
 
 
 from .lnurl import *  # noqa: F401,F403
