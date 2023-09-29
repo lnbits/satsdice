@@ -2,15 +2,14 @@ import json
 from sqlite3 import Row
 from typing import Dict, Optional
 
-from fastapi import Request
-from fastapi.param_functions import Query
+from fastapi import Request, Query
 from lnurl import Lnurl
 from lnurl import encode as lnurl_encode
 from lnurl.types import LnurlPayMetadata
 from pydantic import BaseModel
 
 
-class satsdiceLink(BaseModel):
+class SatsdiceLink(BaseModel):
     id: str
     wallet: str
     title: str
@@ -29,7 +28,7 @@ class satsdiceLink(BaseModel):
         return lnurl_encode(req.url_for("satsdice.lnurlp_response", link_id=self.id))
 
     @classmethod
-    def from_row(cls, row: Row) -> "satsdiceLink":
+    def from_row(cls, row: Row) -> "SatsdiceLink":
         data = dict(row)
         return cls(**data)
 
@@ -40,7 +39,10 @@ class satsdiceLink(BaseModel):
                 [
                     [
                         "text/plain",
-                        f"{self.title} (Chance: {self.chance}%, Multiplier: {self.multiplier})",
+                        (
+                            f"{self.title} (Chance: {self.chance}%, "
+                            f"Multiplier: {self.multiplier})"
+                        )
                     ]
                 ]
             )
@@ -53,7 +55,7 @@ class satsdiceLink(BaseModel):
         return {"tag": "url", "description": "Check the attached link", "url": url}
 
 
-class satsdicePayment(BaseModel):
+class SatsdicePayment(BaseModel):
     payment_hash: str
     satsdice_pay: str
     value: int
@@ -61,7 +63,7 @@ class satsdicePayment(BaseModel):
     lost: bool
 
 
-class satsdiceWithdraw(BaseModel):
+class SatsdiceWithdraw(BaseModel):
     id: str
     satsdice_pay: str
     value: int

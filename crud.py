@@ -8,13 +8,13 @@ from .models import (
     CreateSatsDiceLink,
     CreateSatsDicePayment,
     CreateSatsDiceWithdraw,
-    satsdiceLink,
-    satsdicePayment,
-    satsdiceWithdraw,
+    SatsdiceLink,
+    SatsdicePayment,
+    SatsdiceWithdraw,
 )
 
 
-async def create_satsdice_pay(wallet_id: str, data: CreateSatsDiceLink) -> satsdiceLink:
+async def create_satsdice_pay(wallet_id: str, data: CreateSatsDiceLink) -> SatsdiceLink:
     satsdice_id = urlsafe_short_hash()
     await db.execute(
         """
@@ -53,14 +53,14 @@ async def create_satsdice_pay(wallet_id: str, data: CreateSatsDiceLink) -> satsd
     return link
 
 
-async def get_satsdice_pay(link_id: str) -> Optional[satsdiceLink]:
+async def get_satsdice_pay(link_id: str) -> Optional[SatsdiceLink]:
     row = await db.fetchone(
         "SELECT * FROM satsdice.satsdice_pay WHERE id = ?", (link_id,)
     )
-    return satsdiceLink(**row) if row else None
+    return SatsdiceLink(**row) if row else None
 
 
-async def get_satsdice_pays(wallet_ids: Union[str, List[str]]) -> List[satsdiceLink]:
+async def get_satsdice_pays(wallet_ids: Union[str, List[str]]) -> List[SatsdiceLink]:
     if isinstance(wallet_ids, str):
         wallet_ids = [wallet_ids]
 
@@ -72,10 +72,10 @@ async def get_satsdice_pays(wallet_ids: Union[str, List[str]]) -> List[satsdiceL
         """,
         (*wallet_ids,),
     )
-    return [satsdiceLink(**row) for row in rows]
+    return [SatsdiceLink(**row) for row in rows]
 
 
-async def update_satsdice_pay(link_id: str, **kwargs) -> satsdiceLink:
+async def update_satsdice_pay(link_id: str, **kwargs) -> SatsdiceLink:
     q = ", ".join([f"{field[0]} = ?" for field in kwargs.items()])
     await db.execute(
         f"UPDATE satsdice.satsdice_pay SET {q} WHERE id = ?",
@@ -84,10 +84,10 @@ async def update_satsdice_pay(link_id: str, **kwargs) -> satsdiceLink:
     row = await db.fetchone(
         "SELECT * FROM satsdice.satsdice_pay WHERE id = ?", (link_id,)
     )
-    return satsdiceLink(**row)
+    return SatsdiceLink(**row)
 
 
-async def increment_satsdice_pay(link_id: str, **kwargs) -> Optional[satsdiceLink]:
+async def increment_satsdice_pay(link_id: str, **kwargs) -> Optional[SatsdiceLink]:
     q = ", ".join([f"{field[0]} = {field[0]} + ?" for field in kwargs.items()])
     await db.execute(
         f"UPDATE satsdice.satsdice_pay SET {q} WHERE id = ?",
@@ -96,7 +96,7 @@ async def increment_satsdice_pay(link_id: str, **kwargs) -> Optional[satsdiceLin
     row = await db.fetchone(
         "SELECT * FROM satsdice.satsdice_pay WHERE id = ?", (link_id,)
     )
-    return satsdiceLink(**row) if row else None
+    return SatsdiceLink(**row) if row else None
 
 
 async def delete_satsdice_pay(link_id: str) -> None:
@@ -106,7 +106,7 @@ async def delete_satsdice_pay(link_id: str) -> None:
 ##################SATSDICE PAYMENT LINKS
 
 
-async def create_satsdice_payment(data: CreateSatsDicePayment) -> satsdicePayment:
+async def create_satsdice_payment(data: CreateSatsDicePayment) -> SatsdicePayment:
     await db.execute(
         """
         INSERT INTO satsdice.satsdice_payment (
@@ -131,15 +131,15 @@ async def create_satsdice_payment(data: CreateSatsDicePayment) -> satsdicePaymen
     return payment
 
 
-async def get_satsdice_payment(payment_hash: str) -> Optional[satsdicePayment]:
+async def get_satsdice_payment(payment_hash: str) -> Optional[SatsdicePayment]:
     row = await db.fetchone(
         "SELECT * FROM satsdice.satsdice_payment WHERE payment_hash = ?",
         (payment_hash,),
     )
-    return satsdicePayment(**row) if row else None
+    return SatsdicePayment(**row) if row else None
 
 
-async def update_satsdice_payment(payment_hash: str, **kwargs) -> satsdicePayment:
+async def update_satsdice_payment(payment_hash: str, **kwargs) -> SatsdicePayment:
     q = ", ".join([f"{field[0]} = ?" for field in kwargs.items()])
 
     await db.execute(
@@ -150,13 +150,13 @@ async def update_satsdice_payment(payment_hash: str, **kwargs) -> satsdicePaymen
         "SELECT * FROM satsdice.satsdice_payment WHERE payment_hash = ?",
         (payment_hash,),
     )
-    return satsdicePayment(**row)
+    return SatsdicePayment(**row)
 
 
 ##################SATSDICE WITHDRAW LINKS
 
 
-async def create_satsdice_withdraw(data: CreateSatsDiceWithdraw) -> satsdiceWithdraw:
+async def create_satsdice_withdraw(data: CreateSatsDiceWithdraw) -> SatsdiceWithdraw:
     await db.execute(
         """
         INSERT INTO satsdice.satsdice_withdraw (
@@ -185,7 +185,7 @@ async def create_satsdice_withdraw(data: CreateSatsDiceWithdraw) -> satsdiceWith
     return withdraw
 
 
-async def get_satsdice_withdraw(withdraw_id: str, num=0) -> Optional[satsdiceWithdraw]:
+async def get_satsdice_withdraw(withdraw_id: str, num=0) -> Optional[SatsdiceWithdraw]:
     row = await db.fetchone(
         "SELECT * FROM satsdice.satsdice_withdraw WHERE id = ?", (withdraw_id,)
     )
@@ -196,12 +196,12 @@ async def get_satsdice_withdraw(withdraw_id: str, num=0) -> Optional[satsdiceWit
     for item in row:
         withdraw.append(item)
     withdraw.append(num)
-    return satsdiceWithdraw(**row)
+    return SatsdiceWithdraw(**row)
 
 
 async def get_satsdice_withdraw_by_hash(
     unique_hash: str, num=0
-) -> Optional[satsdiceWithdraw]:
+) -> Optional[SatsdiceWithdraw]:
     row = await db.fetchone(
         "SELECT * FROM satsdice.satsdice_withdraw WHERE unique_hash = ?", (unique_hash,)
     )
@@ -212,12 +212,12 @@ async def get_satsdice_withdraw_by_hash(
     for item in row:
         withdraw.append(item)
     withdraw.append(num)
-    return satsdiceWithdraw(**row)
+    return SatsdiceWithdraw(**row)
 
 
 async def get_satsdice_withdraws(
     wallet_ids: Union[str, List[str]]
-) -> List[satsdiceWithdraw]:
+) -> List[SatsdiceWithdraw]:
     if isinstance(wallet_ids, str):
         wallet_ids = [wallet_ids]
 
@@ -227,12 +227,12 @@ async def get_satsdice_withdraws(
         (*wallet_ids,),
     )
 
-    return [satsdiceWithdraw(**row) for row in rows]
+    return [SatsdiceWithdraw(**row) for row in rows]
 
 
 async def update_satsdice_withdraw(
     withdraw_id: str, **kwargs
-) -> Optional[satsdiceWithdraw]:
+) -> Optional[SatsdiceWithdraw]:
     q = ", ".join([f"{field[0]} = ?" for field in kwargs.items()])
     await db.execute(
         f"UPDATE satsdice.satsdice_withdraw SET {q} WHERE id = ?",
@@ -241,7 +241,7 @@ async def update_satsdice_withdraw(
     row = await db.fetchone(
         "SELECT * FROM satsdice.satsdice_withdraw WHERE id = ?", (withdraw_id,)
     )
-    return satsdiceWithdraw(**row) if row else None
+    return SatsdiceWithdraw(**row) if row else None
 
 
 async def delete_satsdice_withdraw(withdraw_id: str) -> None:
