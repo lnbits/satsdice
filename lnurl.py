@@ -32,7 +32,7 @@ async def api_lnurlp_response(req: Request, link_id: str):
         )
     payResponse = {
         "tag": "payRequest",
-        "callback": req.url_for("satsdice.api_lnurlp_callback", link_id=link.id),
+        "callback": str(req.url_for("satsdice.api_lnurlp_callback", link_id=link.id)),
         "metadata": link.lnurlpay_metadata,
         "minSendable": math.ceil(link.min_bet * 1) * 1000,
         "maxSendable": round(link.max_bet * 1) * 1000,
@@ -112,7 +112,7 @@ async def api_lnurlw_response(req: Request, unique_hash: str):
         )
     if link.used:
         raise HTTPException(status_code=HTTPStatus.OK, detail="satsdice is spent.")
-    url = req.url_for("satsdice.api_lnurlw_callback", unique_hash=link.unique_hash)
+    url = str(req.url_for("satsdice.api_lnurlw_callback", unique_hash=link.unique_hash))
     withdrawResponse = {
         "tag": "withdrawRequest",
         "callback": url,
