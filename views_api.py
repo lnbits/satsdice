@@ -66,33 +66,41 @@ async def api_link_retrieve(
 
 
 @satsdice_ext.post("/api/v1/links", status_code=HTTPStatus.CREATED)
-@satsdice_ext.put("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
-async def api_link_create_or_update(
+async def api_create_satsdice_link(
     data: CreateSatsDiceLink,
-    link_id: Optional[str],
     wallet: WalletTypeInfo = Depends(get_key_type),
 ):
     if data.min_bet > data.max_bet:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
-    if link_id:
-        link = await get_satsdice_pay(link_id)
-        if not link:
-            raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND, detail="Satsdice does not exist"
-            )
 
-        if link.wallet != wallet.wallet.id:
-            raise HTTPException(
-                status_code=HTTPStatus.FORBIDDEN,
-                detail="Come on, seriously, this isn't your satsdice!",
-            )
-
-        data.wallet = wallet.wallet.id
-        link = await update_satsdice_pay(link_id, **data.dict())
-    else:
-        link = await create_satsdice_pay(wallet_id=wallet.wallet.id, data=data)
-
+    link = await create_satsdice_pay(wallet_id=wallet.wallet.id, data=data)
     return {**link.dict(), **{"lnurl": link.lnurl}}
+
+
+@satsdice_ext.put("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
+async def api_update_satsdice_link(
+    link_id: str,
+    data: CreateSatsDiceLink,
+    wallet: WalletTypeInfo = Depends(get_key_type),
+):
+    link = await get_satsdice_pay(link_id)
+    if not link:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Satsdice does not exist"
+        )
+
+    if link.wallet != wallet.wallet.id:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail="Come on, seriously, this isn't your satsdice!",
+        )
+
+    if data.min_bet > data.max_bet:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
+
+    data.wallet = wallet.wallet.id
+    updated_link = await update_satsdice_pay(link_id, **data.dict())
+    return {**updated_link.dict(), **{"lnurl": updated_link.lnurl}}
 
 
 @satsdice_ext.delete("/api/v1/links/{link_id}")
