@@ -25,7 +25,9 @@ class SatsdiceLink(BaseModel):
     open_time: int
 
     def lnurl(self, req: Request) -> str:
-        return lnurl_encode(req.url_for("satsdice.lnurlp_response", link_id=self.id))
+        return lnurl_encode(
+            str(req.url_for("satsdice.lnurlp_response", link_id=self.id))
+        )
 
     @classmethod
     def from_row(cls, row: Row) -> "SatsdiceLink":
@@ -49,9 +51,9 @@ class SatsdiceLink(BaseModel):
         )
 
     def success_action(self, payment_hash: str, req: Request) -> Optional[Dict]:
-        url = req.url_for(
+        url = str(req.url_for(
             "satsdice.displaywin", link_id=self.id, payment_hash=payment_hash
-        )
+        ))
         return {"tag": "url", "description": "Check the attached link", "url": url}
 
 
@@ -74,7 +76,7 @@ class SatsdiceWithdraw(BaseModel):
 
     def lnurl(self, req: Request) -> Lnurl:
         return lnurl_encode(
-            req.url_for("satsdice.lnurlw_response", unique_hash=self.unique_hash)
+            str(req.url_for("satsdice.lnurlw_response", unique_hash=self.unique_hash))
         )
 
     @property
@@ -82,7 +84,7 @@ class SatsdiceWithdraw(BaseModel):
         return self.used >= 1
 
     def lnurl_response(self, req: Request):
-        url = req.url_for("satsdice.api_lnurlw_callback", unique_hash=self.unique_hash)
+        url = str(req.url_for("satsdice.api_lnurlw_callback", unique_hash=self.unique_hash))
         withdrawResponse = {
             "tag": "withdrawRequest",
             "callback": url,
