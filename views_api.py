@@ -6,7 +6,7 @@ from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 from starlette.exceptions import HTTPException
 
 from lnbits.core.crud import get_user
-from lnbits.decorators import WalletTypeInfo, get_key_type
+from lnbits.decorators import WalletTypeInfo, get_key_type, require_admin_key
 
 from . import satsdice_ext
 from .crud import (
@@ -68,7 +68,7 @@ async def api_link_retrieve(
 @satsdice_ext.post("/api/v1/links", status_code=HTTPStatus.CREATED)
 async def api_create_satsdice_link(
     data: CreateSatsDiceLink,
-    wallet: WalletTypeInfo = Depends(get_key_type),
+    wallet: WalletTypeInfo = Depends(require_admin_key),
 ):
     if data.min_bet > data.max_bet:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
@@ -81,7 +81,7 @@ async def api_create_satsdice_link(
 async def api_update_satsdice_link(
     link_id: str,
     data: CreateSatsDiceLink,
-    wallet: WalletTypeInfo = Depends(get_key_type),
+    wallet: WalletTypeInfo = Depends(require_admin_key),
 ):
     link = await get_satsdice_pay(link_id)
     if not link:
@@ -106,7 +106,7 @@ async def api_update_satsdice_link(
 @satsdice_ext.delete("/api/v1/links/{link_id}")
 async def api_link_delete(
     link_id: str,
-    wallet: WalletTypeInfo = Depends(get_key_type),
+    wallet: WalletTypeInfo = Depends(require_admin_key),
 ):
     link = await get_satsdice_pay(link_id)
     if not link:
