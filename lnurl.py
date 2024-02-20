@@ -7,7 +7,7 @@ from fastapi.param_functions import Query
 from starlette.exceptions import HTTPException
 from starlette.responses import HTMLResponse
 
-from lnbits.core.services import create_invoice, pay_invoice
+from lnbits.core.services import create_invoice, pay_invoice, PaymentFailure
 
 from . import satsdice_ext
 from .crud import (
@@ -45,9 +45,7 @@ async def api_lnurlp_response(req: Request, link_id: str):
     response_class=HTMLResponse,
     name="satsdice.api_lnurlp_callback",
 )
-async def api_lnurlp_callback(
-    req: Request, link_id: str, amount: str = Query(None)
-):
+async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(None)):
     link = await get_satsdice_pay(link_id)
     if not link:
         raise HTTPException(
@@ -145,12 +143,18 @@ async def api_lnurlw_callback(
     paylink = await get_satsdice_pay(link.satsdice_pay)
 
     if paylink:
-        await update_satsdice_withdraw(link.id, used=1)
-        await pay_invoice(
-            wallet_id=paylink.wallet,
-            payment_request=pr,
-            max_sat=link.value,
-            extra={"tag": "withdraw"},
-        )
+        try:
+            await pay_invoice(
+                wallet_id=paylink.wallet,
+                payment_request=pr,
+                max_sat=link.value,
+                extra={"tag": "withdraw"},
+            )
+            # If no exception was raised, it means payment was successful
+            await update_satsdice_withdraw(link.id, used=1)
+            return {"status": "OK"}
+        except PaymentFailure as e:
+            # Handle the payment failure, log the error or take appropriate action
+            return {"status": "ERROR", "reason": str(e)}
 
-        return {"status": "OK"}
+    return {"status": "ERROR", "reason": "no paylink found"}
