@@ -142,20 +142,20 @@ async def api_lnurlw_callback(
         return {"status": "ERROR", "reason": "spent"}
     paylink = await get_satsdice_pay(link.satsdice_pay)
 
-    if paylink:
-        await update_satsdice_withdraw(link.id, used=1)
-        try:
-            await pay_invoice(
-                wallet_id=paylink.wallet,
-                payment_request=pr,
-                max_sat=link.value,
-                extra={"tag": "withdraw"},
-            )
-            # If no exception was raised, it means payment was successful
-            return {"status": "OK"}
-        except PaymentFailure as e:
-            # If the payment failed, we need to reset the withdraw to unused
-            await update_satsdice_withdraw(link.id, used=0)
-            return {"status": "ERROR", "reason": str(e)}
+    if not paylink:
+        return {"status": "ERROR", "reason": "no paylink found"}
 
-    return {"status": "ERROR", "reason": "no paylink found"}
+    await update_satsdice_withdraw(link.id, used=1)
+    try:
+        await pay_invoice(
+            wallet_id=paylink.wallet,
+            payment_request=pr,
+            max_sat=link.value,
+            extra={"tag": "withdraw"},
+        )
+        # If no exception was raised, it means payment was successful
+        return {"status": "OK"}
+    except PaymentFailure as e:
+        # If the payment failed, we need to reset the withdraw to unused
+        await update_satsdice_withdraw(link.id, used=0)
+        return {"status": "ERROR", "reason": str(e)}
