@@ -10,10 +10,8 @@ from starlette.responses import HTMLResponse
 from loguru import logger
 
 from lnbits.core.services import (
-    InvoiceFailure,
     create_invoice,
     pay_invoice,
-    PaymentFailure,
 )
 
 from . import satsdice_ext
@@ -162,7 +160,7 @@ async def api_lnurlw_callback(
         )
         # If no exception was raised, it means payment was successful
         return {"status": "OK"}
-    except (InvoiceFailure, PaymentFailure) as e:
+    except HTTPException as e:
         # If the payment failed, we need to reset the withdraw to unused
         await update_satsdice_withdraw(link.id, used=0)
         return {"status": "ERROR", "reason": str(e)}
