@@ -1,14 +1,12 @@
 from http import HTTPStatus
-from typing import Optional
 
-from fastapi import Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
+from lnbits.core.crud import get_user
+from lnbits.core.models import WalletTypeInfo
+from lnbits.decorators import get_key_type, require_admin_key
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 from starlette.exceptions import HTTPException
 
-from lnbits.core.crud import get_user
-from lnbits.decorators import WalletTypeInfo, get_key_type, require_admin_key
-
-from . import satsdice_ext
 from .crud import (
     create_satsdice_pay,
     delete_satsdice_pay,
@@ -19,10 +17,10 @@ from .crud import (
 )
 from .models import CreateSatsDiceLink
 
-################LNURL pay
+satsdice_api_router = APIRouter()
 
 
-@satsdice_ext.get("/api/v1/links")
+@satsdice_api_router.get("/api/v1/links")
 async def api_links(
     request: Request,
     wallet: WalletTypeInfo = Depends(get_key_type),
@@ -39,14 +37,17 @@ async def api_links(
         links = await get_satsdice_pays(wallet_ids)
 
         return [{**link.dict(), **{"lnurl": link.lnurl(request)}} for link in links]
-    except LnurlInvalidUrl:
+    except LnurlInvalidUrl as exc:
         raise HTTPException(
             status_code=HTTPStatus.UPGRADE_REQUIRED,
-            detail="LNURLs need to be delivered over a publically accessible `https` domain or Tor.",
-        )
+            detail="""
+            LNURLs need to be delivered over a
+            publically accessible `https` domain or Tor.
+            """,
+        ) from exc
 
 
-@satsdice_ext.get("/api/v1/links/{link_id}")
+@satsdice_api_router.get("/api/v1/links/{link_id}")
 async def api_link_retrieve(
     link_id: str, wallet: WalletTypeInfo = Depends(get_key_type)
 ):
@@ -65,7 +66,7 @@ async def api_link_retrieve(
     return {**link.dict(), **{"lnurl": link.lnurl}}
 
 
-@satsdice_ext.post("/api/v1/links", status_code=HTTPStatus.CREATED)
+@satsdice_api_router.post("/api/v1/links", status_code=HTTPStatus.CREATED)
 async def api_create_satsdice_link(
     data: CreateSatsDiceLink,
     wallet: WalletTypeInfo = Depends(require_admin_key),
@@ -77,7 +78,7 @@ async def api_create_satsdice_link(
     return {**link.dict(), **{"lnurl": link.lnurl}}
 
 
-@satsdice_ext.put("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
+@satsdice_api_router.put("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
 async def api_update_satsdice_link(
     link_id: str,
     data: CreateSatsDiceLink,
@@ -103,7 +104,7 @@ async def api_update_satsdice_link(
     return {**updated_link.dict(), **{"lnurl": updated_link.lnurl}}
 
 
-@satsdice_ext.delete("/api/v1/links/{link_id}")
+@satsdice_api_router.delete("/api/v1/links/{link_id}")
 async def api_link_delete(
     link_id: str,
     wallet: WalletTypeInfo = Depends(require_admin_key),
@@ -124,15 +125,12 @@ async def api_link_delete(
     return "", HTTPStatus.NO_CONTENT
 
 
-##########LNURL withdraw
-
-
-@satsdice_ext.get(
+@satsdice_api_router.get(
     "/api/v1/withdraws/{the_hash}/{lnurl_id}", dependencies=[Depends(get_key_type)]
 )
 async def api_withdraw_hash_retrieve(
     the_hash: str,
     lnurl_id: str,
 ):
-    hashCheck = await get_withdraw_hash_checkw(the_hash, lnurl_id)
-    return hashCheck
+    hash_check = await get_withdraw_hash_checkw(the_hash, lnurl_id)
+    return hash_check

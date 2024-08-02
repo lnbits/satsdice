@@ -2,7 +2,7 @@ import json
 from sqlite3 import Row
 from typing import Dict, Optional
 
-from fastapi import Request, Query
+from fastapi import Query, Request
 from lnurl import Lnurl
 from lnurl import encode as lnurl_encode
 from lnurl.types import LnurlPayMetadata
@@ -89,7 +89,7 @@ class SatsdiceWithdraw(BaseModel):
         url = str(
             req.url_for("satsdice.api_lnurlw_callback", unique_hash=self.unique_hash)
         )
-        withdrawResponse = {
+        withdraw_response = {
             "tag": "withdrawRequest",
             "callback": url,
             "k1": self.k1,
@@ -97,7 +97,7 @@ class SatsdiceWithdraw(BaseModel):
             "maxWithdrawable": self.value * 1000,
             "defaultDescription": "Satsdice winnings!",
         }
-        return withdrawResponse
+        return withdraw_response
 
 
 class HashCheck(BaseModel):
