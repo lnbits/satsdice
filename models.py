@@ -44,16 +44,18 @@ class SatsdiceLink(BaseModel):
                         (
                             f"{self.title} (Chance: {self.chance}%, "
                             f"Multiplier: {self.multiplier})"
-                        )
+                        ),
                     ]
                 ]
             )
         )
 
     def success_action(self, payment_hash: str, req: Request) -> Optional[Dict]:
-        url = str(req.url_for(
-            "satsdice.displaywin", link_id=self.id, payment_hash=payment_hash
-        ))
+        url = str(
+            req.url_for(
+                "satsdice.displaywin", link_id=self.id, payment_hash=payment_hash
+            )
+        )
         return {"tag": "url", "description": "Check the attached link", "url": url}
 
 
@@ -84,7 +86,9 @@ class SatsdiceWithdraw(BaseModel):
         return self.used >= 1
 
     def lnurl_response(self, req: Request):
-        url = str(req.url_for("satsdice.api_lnurlw_callback", unique_hash=self.unique_hash))
+        url = str(
+            req.url_for("satsdice.api_lnurlw_callback", unique_hash=self.unique_hash)
+        )
         withdrawResponse = {
             "tag": "withdrawRequest",
             "callback": url,

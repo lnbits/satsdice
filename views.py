@@ -57,9 +57,7 @@ async def display(request: Request, link_id: str):
     name="satsdice.displaywin",
     response_class=HTMLResponse,
 )
-async def displaywin(
-    request: Request, link_id: str, payment_hash: str
-):
+async def displaywin(request: Request, link_id: str, payment_hash: str):
     satsdicelink = await get_satsdice_pay(link_id)
     if not satsdicelink:
         raise HTTPException(

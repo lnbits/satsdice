@@ -1,10 +1,9 @@
-
 {
-    "repos": [
-        {
-            "id": "satsdice",
-            "organisation": "lnbits",
-            "repository": "satsdice"
-        }
-    ]
+  "repos": [
+    {
+      "id": "satsdice",
+      "organisation": "lnbits",
+      "repository": "satsdice"
+    }
+  ]
 }
