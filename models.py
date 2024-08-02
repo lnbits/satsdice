@@ -2,7 +2,7 @@ import json
 from sqlite3 import Row
 from typing import Dict, Optional
 
-from fastapi import Request, Query
+from fastapi import Query, Request
 from lnurl import Lnurl
 from lnurl import encode as lnurl_encode
 from lnurl.types import LnurlPayMetadata
@@ -44,16 +44,18 @@ class SatsdiceLink(BaseModel):
                         (
                             f"{self.title} (Chance: {self.chance}%, "
                             f"Multiplier: {self.multiplier})"
-                        )
+                        ),
                     ]
                 ]
             )
         )
 
     def success_action(self, payment_hash: str, req: Request) -> Optional[Dict]:
-        url = str(req.url_for(
-            "satsdice.displaywin", link_id=self.id, payment_hash=payment_hash
-        ))
+        url = str(
+            req.url_for(
+                "satsdice.displaywin", link_id=self.id, payment_hash=payment_hash
+            )
+        )
         return {"tag": "url", "description": "Check the attached link", "url": url}
 
 
@@ -84,8 +86,10 @@ class SatsdiceWithdraw(BaseModel):
         return self.used >= 1
 
     def lnurl_response(self, req: Request):
-        url = str(req.url_for("satsdice.api_lnurlw_callback", unique_hash=self.unique_hash))
-        withdrawResponse = {
+        url = str(
+            req.url_for("satsdice.api_lnurlw_callback", unique_hash=self.unique_hash)
+        )
+        withdraw_response = {
             "tag": "withdrawRequest",
             "callback": url,
             "k1": self.k1,
@@ -93,7 +97,7 @@ class SatsdiceWithdraw(BaseModel):
             "maxWithdrawable": self.value * 1000,
             "defaultDescription": "Satsdice winnings!",
         }
-        return withdrawResponse
+        return withdraw_response
 
 
 class HashCheck(BaseModel):

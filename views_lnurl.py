@@ -2,19 +2,15 @@ import json
 import math
 from http import HTTPStatus
 
-from fastapi import Request
-from fastapi.param_functions import Query
-from starlette.exceptions import HTTPException
-from starlette.responses import HTMLResponse
-
-from loguru import logger
-
+from fastapi import APIRouter, Query, Request
 from lnbits.core.services import (
     create_invoice,
     pay_invoice,
 )
+from loguru import logger
+from starlette.exceptions import HTTPException
+from starlette.responses import HTMLResponse
 
-from . import satsdice_ext
 from .crud import (
     create_satsdice_payment,
     get_satsdice_pay,
@@ -23,8 +19,10 @@ from .crud import (
 )
 from .models import CreateSatsDicePayment
 
+satsdice_lnurl_router = APIRouter()
 
-@satsdice_ext.get(
+
+@satsdice_lnurl_router.get(
     "/api/v1/lnurlp/{link_id}",
     response_class=HTMLResponse,
     name="satsdice.lnurlp_response",
@@ -35,17 +33,17 @@ async def api_lnurlp_response(req: Request, link_id: str):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="LNURL-pay not found."
         )
-    payResponse = {
+    pay_response = {
         "tag": "payRequest",
         "callback": str(req.url_for("satsdice.api_lnurlp_callback", link_id=link.id)),
         "metadata": link.lnurlpay_metadata,
         "minSendable": math.ceil(link.min_bet * 1) * 1000,
         "maxSendable": round(link.max_bet * 1) * 1000,
     }
-    return json.dumps(payResponse)
+    return json.dumps(pay_response)
 
 
-@satsdice_ext.get(
+@satsdice_lnurl_router.get(
     "/api/v1/lnurlp/cb/{link_id}",
     response_class=HTMLResponse,
     name="satsdice.api_lnurlp_callback",
@@ -57,20 +55,19 @@ async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(No
             status_code=HTTPStatus.NOT_FOUND, detail="LNURL-pay not found."
         )
 
-    min, max = link.min_bet, link.max_bet
-    min = link.min_bet * 1000
-    max = link.max_bet * 1000
+    min_bet = link.min_bet * 1000
+    max_bet = link.max_bet * 1000
 
     amount_received = int(amount or 0)
-    if amount_received < min:
+    if amount_received < min_bet:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
-            detail=f"Amount {amount_received} is smaller than minimum {min}.",
+            detail=f"Amount {amount_received} is smaller than minimum {min_bet}.",
         )
-    elif amount_received > max:
+    elif amount_received > max_bet:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN,
-            detail=f"Amount {amount_received} is greater than maximum {max}.",
+            detail=f"Amount {amount_received} is greater than maximum {max_bet}.",
         )
 
     payment_hash, payment_request = await create_invoice(
@@ -90,18 +87,15 @@ async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(No
     )
 
     await create_satsdice_payment(data)
-    payResponse: dict = {
+    pay_response: dict = {
         "pr": payment_request,
         "successAction": success_action,
         "routes": [],
     }
-    return json.dumps(payResponse)
+    return json.dumps(pay_response)
 
 
-##############LNURLW STUFF
-
-
-@satsdice_ext.get(
+@satsdice_lnurl_router.get(
     "/api/v1/lnurlw/{unique_hash}",
     response_class=HTMLResponse,
     name="satsdice.lnurlw_response",
@@ -116,7 +110,7 @@ async def api_lnurlw_response(req: Request, unique_hash: str):
     if link.used:
         raise HTTPException(status_code=HTTPStatus.OK, detail="satsdice is spent.")
     url = str(req.url_for("satsdice.api_lnurlw_callback", unique_hash=link.unique_hash))
-    withdrawResponse = {
+    withdraw_response = {
         "tag": "withdrawRequest",
         "callback": url,
         "k1": link.k1,
@@ -124,13 +118,13 @@ async def api_lnurlw_response(req: Request, unique_hash: str):
         "maxWithdrawable": link.value * 1000,
         "defaultDescription": "Satsdice winnings!",
     }
-    return json.dumps(withdrawResponse)
+    return json.dumps(withdraw_response)
 
 
 # CALLBACK
 
 
-@satsdice_ext.get(
+@satsdice_lnurl_router.get(
     "/api/v1/lnurlw/cb/{unique_hash}",
     status_code=HTTPStatus.OK,
     name="satsdice.api_lnurlw_callback",
