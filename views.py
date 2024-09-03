@@ -89,7 +89,7 @@ async def displaywin(request: Request, link_id: str, payment_hash: str):
         )
     rand = random.randint(0, 100)
     chance = satsdicelink.chance
-    core_payment = await get_standalone_payment(payment_hash)
+    core_payment = await get_standalone_payment(payment_hash, incoming=True)
     status = (await core_payment.check_status()).success if core_payment else False
     if not rand < chance or not status:
         await update_satsdice_payment(payment_hash, lost=1)
