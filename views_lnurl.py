@@ -2,14 +2,13 @@ import json
 import math
 from http import HTTPStatus
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi.responses import HTMLResponse
 from lnbits.core.services import (
     create_invoice,
     pay_invoice,
 )
 from loguru import logger
-from starlette.exceptions import HTTPException
-from starlette.responses import HTMLResponse
 
 from .crud import (
     create_satsdice_payment,
@@ -24,7 +23,6 @@ satsdice_lnurl_router = APIRouter()
 
 @satsdice_lnurl_router.get(
     "/api/v1/lnurlp/{link_id}",
-    response_class=HTMLResponse,
     name="satsdice.lnurlp_response",
 )
 async def api_lnurlp_response(req: Request, link_id: str):
@@ -33,14 +31,13 @@ async def api_lnurlp_response(req: Request, link_id: str):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="LNURL-pay not found."
         )
-    pay_response = {
+    return {
         "tag": "payRequest",
         "callback": str(req.url_for("satsdice.api_lnurlp_callback", link_id=link.id)),
         "metadata": link.lnurlpay_metadata,
         "minSendable": math.ceil(link.min_bet * 1) * 1000,
         "maxSendable": round(link.max_bet * 1) * 1000,
     }
-    return json.dumps(pay_response)
 
 
 @satsdice_lnurl_router.get(
@@ -97,7 +94,6 @@ async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(No
 
 @satsdice_lnurl_router.get(
     "/api/v1/lnurlw/{unique_hash}",
-    response_class=HTMLResponse,
     name="satsdice.lnurlw_response",
 )
 async def api_lnurlw_response(req: Request, unique_hash: str):
@@ -110,7 +106,7 @@ async def api_lnurlw_response(req: Request, unique_hash: str):
     if link.used:
         raise HTTPException(status_code=HTTPStatus.OK, detail="satsdice is spent.")
     url = str(req.url_for("satsdice.api_lnurlw_callback", unique_hash=link.unique_hash))
-    withdraw_response = {
+    return {
         "tag": "withdrawRequest",
         "callback": url,
         "k1": link.k1,
@@ -118,10 +114,6 @@ async def api_lnurlw_response(req: Request, unique_hash: str):
         "maxWithdrawable": link.value * 1000,
         "defaultDescription": "Satsdice winnings!",
     }
-    return json.dumps(withdraw_response)
-
-
-# CALLBACK
 
 
 @satsdice_lnurl_router.get(
@@ -144,7 +136,8 @@ async def api_lnurlw_callback(
     if not paylink:
         return {"status": "ERROR", "reason": "no paylink found"}
 
-    await update_satsdice_withdraw(link.id, used=1)
+    link.used = True
+    await update_satsdice_withdraw(link)
     try:
         await pay_invoice(
             wallet_id=paylink.wallet,
@@ -156,7 +149,8 @@ async def api_lnurlw_callback(
         return {"status": "OK"}
     except HTTPException as e:
         # If the payment failed, we need to reset the withdraw to unused
-        await update_satsdice_withdraw(link.id, used=0)
+        link.used = False
+        await update_satsdice_withdraw(link)
         return {"status": "ERROR", "reason": str(e)}
     except Exception as e:
         logger.error("unexpected exception in satsdice withdraw", e)

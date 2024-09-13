@@ -112,9 +112,11 @@ async def api_update_satsdice_link(
     if data.min_bet > data.max_bet:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
 
-    data.wallet = wallet.wallet.id
-    updated_link = await update_satsdice_pay(link_id, **data.dict())
-    return {**updated_link.dict(), **{"lnurl": updated_link.lnurl}}
+    data.wallet = data.wallet or wallet.wallet.id
+    for k, v in data.dict().items():
+        setattr(link, k, v)
+    await update_satsdice_pay(link)
+    return {**link.dict(), **{"lnurl": link.lnurl}}
 
 
 @satsdice_api_router.delete("/api/v1/links/{link_id}")
