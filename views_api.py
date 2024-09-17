@@ -7,6 +7,7 @@ from lnbits.decorators import get_key_type, require_admin_key
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 from starlette.exceptions import HTTPException
 
+
 from .crud import (
     create_satsdice_pay,
     delete_satsdice_pay,
@@ -14,8 +15,12 @@ from .crud import (
     get_satsdice_pays,
     get_withdraw_hash_checkw,
     update_satsdice_pay,
+    create_coinflip, 
+    add_coinflip_participant, 
+    mark_participant_paid, 
+    get_coinflip_participants,
 )
-from .models import CreateSatsDiceLink
+from .models import CreateSatsDiceLink, CreateCoinflip
 
 satsdice_api_router = APIRouter()
 
@@ -134,3 +139,22 @@ async def api_withdraw_hash_retrieve(
 ):
     hash_check = await get_withdraw_hash_checkw(the_hash, lnurl_id)
     return hash_check
+
+@satsdice_api_router.post("/api/v1/coinflip", response_model=Coinflip)
+async def api_create_coinflip(data: CreateCoinflip):
+    return await create_coinflip(data)
+
+@satsdice_api_router.post("/api/v1/coinflip/{coinflip_id}/join")
+async def api_join_coinflip(coinflip_id: str, lnaddress: str):
+    participant = await add_coinflip_participant(coinflip_id, lnaddress)
+    # Create an invoice and return it to the frontend
+    return {"invoice": "lnbc1..."}
+
+@satsdice_api_router.post("/api/v1/coinflip/{coinflip_id}/mark_paid")
+async def api_mark_participant_paid(coinflip_id: str, participant_id: str):
+    await mark_participant_paid(participant_id)
+    participants = await get_coinflip_participants(coinflip_id)
+    if all(p.paid for p in participants):
+        # Select a random winner and distribute the funds
+        pass
+    return {"status": "success"}

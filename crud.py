@@ -11,6 +11,9 @@ from .models import (
     SatsdiceLink,
     SatsdicePayment,
     SatsdiceWithdraw,
+    CreateCoinflip,
+    Coinflip,
+    CoinflipParticipant,
 )
 
 db = Database("ext_satsdice")
@@ -279,3 +282,67 @@ async def get_withdraw_hash_checkw(the_hash: str, lnurl_id: str):
         return {"lnurl": True, "hash": False}
     else:
         return {"lnurl": True, "hash": True}
+
+## Coinflip 
+
+async def create_coinflip(data: CreateCoinflip) -> Coinflip:
+    coinflip_id = urlsafe_short_hash()
+    await db.execute(
+        """
+        INSERT INTO satsdice.coinflip (
+            id, name, number_of_players, buy_in, house_cut, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            coinflip_id,
+            data.name,
+            data.number_of_players,
+            data.buy_in,
+            data.house_cut,
+            int(datetime.now().timestamp()),
+        ),
+    )
+    return await get_coinflip(coinflip_id)
+
+async def get_coinflip(coinflip_id: str) -> Optional[Coinflip]:
+    row = await db.fetchone(
+        "SELECT * FROM satsdice.coinflip WHERE id = ?", (coinflip_id,)
+    )
+    return Coinflip(**row) if row else None
+
+async def add_coinflip_participant(coinflip_id: str, lnaddress: str) -> CoinflipParticipant:
+    participant_id = urlsafe_short_hash()
+    await db.execute(
+        """
+        INSERT INTO satsdice.coinflip_participants (
+            id, coinflip_id, lnaddress, paid
+        )
+        VALUES (?, ?, ?, ?)
+        """,
+        (
+            participant_id,
+            coinflip_id,
+            lnaddress,
+            False,
+        ),
+    )
+    return await get_coinflip_participant(participant_id)
+
+async def get_coinflip_participant(participant_id: str) -> Optional[CoinflipParticipant]:
+    row = await db.fetchone(
+        "SELECT * FROM satsdice.coinflip_participants WHERE id = ?", (participant_id,)
+    )
+    return CoinflipParticipant(**row) if row else None
+
+async def mark_participant_paid(participant_id: str) -> None:
+    await db.execute(
+        "UPDATE satsdice.coinflip_participants SET paid = ? WHERE id = ?",
+        (True, participant_id),
+    )
+
+async def get_coinflip_participants(coinflip_id: str) -> List[CoinflipParticipant]:
+    rows = await db.fetchall(
+        "SELECT * FROM satsdice.coinflip_participants WHERE coinflip_id = ?", (coinflip_id,)
+    )
+    return [CoinflipParticipant(**row) for row in rows]
