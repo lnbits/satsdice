@@ -104,3 +104,16 @@ async def m006_add_coinflip_participants(db):
         );
         """
     )
+
+async def m007_add_coinflip_settings(db):
+    """
+    Creates a hash check table.
+    """
+    await db.execute(
+        """
+        CREATE TABLE satsdice.settings (
+            key TEXT PRIMARY KEY,
+            value JSONB
+        );
+        """
+    )
