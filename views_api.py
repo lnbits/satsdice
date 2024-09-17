@@ -22,7 +22,12 @@ from .crud import (
     get_coinflip_settings, 
     set_coinflip_settings
 )
-from .models import CreateSatsDiceLink, CreateCoinflip
+from .models import (
+    CreateCoinflip,
+    Coinflip,
+    CoinflipSettings,
+    CreateSatsDiceLink,
+)
 
 satsdice_api_router = APIRouter()
 

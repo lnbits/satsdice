@@ -86,7 +86,15 @@ async def m005_add_coinflip(db):
             house_cut REAL NOT NULL,
             created_at INTEGER NOT NULL
         );
+        """
+    )
 
+async def m006_add_coinflip_participants(db):
+    """
+    Creates a hash check table.
+    """
+    await db.execute(
+        """
         CREATE TABLE satsdice.coinflip_participants (
             id TEXT PRIMARY KEY,
             coinflip_id TEXT NOT NULL,
