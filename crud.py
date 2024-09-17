@@ -14,6 +14,7 @@ from .models import (
     CreateCoinflip,
     Coinflip,
     CoinflipParticipant,
+    CoinflipSettings,
 )
 
 db = Database("ext_satsdice")
@@ -346,3 +347,19 @@ async def get_coinflip_participants(coinflip_id: str) -> List[CoinflipParticipan
         "SELECT * FROM satsdice.coinflip_participants WHERE coinflip_id = ?", (coinflip_id,)
     )
     return [CoinflipParticipant(**row) for row in rows]
+
+async def get_coinflip_settings() -> CoinflipSettings:
+    row = await db.fetchone("SELECT * FROM satsdice.settings WHERE key = 'coinflip'")
+    if row:
+        return CoinflipSettings(**row['value'])
+    return CoinflipSettings(enabled=False, haircut=0.0)
+
+async def set_coinflip_settings(settings: CoinflipSettings) -> None:
+    await db.execute(
+        """
+        INSERT INTO satsdice.settings (key, value)
+        VALUES ('coinflip', ?)
+        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        """,
+        (settings.dict(),)
+    )

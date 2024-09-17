@@ -160,3 +160,7 @@ class CoinflipParticipant(BaseModel):
     coinflip_id: str
     lnaddress: str
     paid: bool
+
+class CoinflipSettings(BaseModel):
+    enabled: bool
+    haircut: float

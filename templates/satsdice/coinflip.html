@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>{{ coinflip.name }}</h1>
+    <p>Number of Players: {{ coinflip.number_of_players }}</p>
+    <p>Buy In: {{ coinflip.buy_in }} sats</p>
+    <p>House Cut: {{ coinflip.house_cut }}%</p>
+
+    <form id="coinflip-form">
+        <label for="lnaddress">LN Address:</label>
+        <input type="text" id="lnaddress" name="lnaddress" required>
+        <button type="submit">Join Coinflip</button>
+    </form>
+
+    <script>
+        document.getElementById('coinflip-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const lnaddress = document.getElementById('lnaddress').value;
+            const response = await fetch(`/api/v1/coinflip/{{ coinflip.id }}/join`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ lnaddress })
+            });
+            const data = await response.json();
+            if (data.invoice) {
+                // Display the invoice to the user
+                alert(`Invoice: ${data.invoice}`);
+            } else {
+                alert('Error joining coinflip');
+            }
+        });
+    </script>
+</div>
+{% endblock %}

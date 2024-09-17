@@ -18,7 +18,9 @@ from .crud import (
     create_coinflip, 
     add_coinflip_participant, 
     mark_participant_paid, 
-    get_coinflip_participants,
+    get_coinflip_participants, 
+    get_coinflip_settings, 
+    set_coinflip_settings
 )
 from .models import CreateSatsDiceLink, CreateCoinflip
 
@@ -140,6 +142,10 @@ async def api_withdraw_hash_retrieve(
     hash_check = await get_withdraw_hash_checkw(the_hash, lnurl_id)
     return hash_check
 
+
+# COINFLIP
+
+
 @satsdice_api_router.post("/api/v1/coinflip", response_model=Coinflip)
 async def api_create_coinflip(data: CreateCoinflip):
     return await create_coinflip(data)
@@ -158,3 +164,12 @@ async def api_mark_participant_paid(coinflip_id: str, participant_id: str):
         # Select a random winner and distribute the funds
         pass
     return {"status": "success"}
+
+@satsdice_api_router.get("/api/v1/coinflip/settings", response_model=CoinflipSettings)
+async def api_get_coinflip_settings():
+    return await get_coinflip_settings()
+
+@satsdice_api_router.post("/api/v1/coinflip/settings", response_model=CoinflipSettings)
+async def api_set_coinflip_settings(settings: CoinflipSettings):
+    await set_coinflip_settings(settings)
+    return settings
