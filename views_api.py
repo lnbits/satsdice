@@ -148,11 +148,20 @@ async def api_withdraw_hash_retrieve(
     return hash_check
 
 
-# COINFLIP
+################
+### Coinflip ###
+################
 
 
 @satsdice_api_router.post("/api/v1/coinflip", response_model=Coinflip)
-async def api_create_coinflip(data: CreateCoinflip):
+async def api_create_coinflip(
+    data: CreateCoinflip,
+    wallet: WalletTypeInfo = Depends(require_admin_key)):
+    user = await get_user(wallet.wallet.user)
+    if not user:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
+        )
     return await create_coinflip(data)
 
 @satsdice_api_router.post("/api/v1/coinflip/{coinflip_id}/join")
@@ -175,6 +184,15 @@ async def api_get_coinflip_settings(coinflip_settings_id: str):
     return await get_coinflip_settings(coinflip_settings_id)
 
 @satsdice_api_router.post("/api/v1/coinflip/settings", response_model=CoinflipSettings)
-async def api_set_coinflip_settings(settings: CoinflipSettings, wallet: WalletTypeInfo = Depends(require_admin_key)):
-    await set_coinflip_settings(settings)
+async def api_set_coinflip_settings(
+    settings: CoinflipSettings, 
+    wallet: WalletTypeInfo = Depends(require_admin_key)):
+
+    user = await get_user(wallet.wallet.user)
+    if not user:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
+        )
+    settings.user_id = user.id
+    settings = await set_coinflip_settings(settings)
     return settings

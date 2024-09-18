@@ -2,6 +2,17 @@
 
 {% block content %}
 <div class="container">
+    <h1>Create Coinflip Game</h1>
+    <form id="create-coinflip-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+        <label for="number_of_players">Number of Players:</label>
+        <input type="number" id="number_of_players" name="number_of_players" required>
+        <label for="buy_in">Buy In:</label>
+        <input type="number" id="buy_in" name="buy_in" required>
+        <button type="submit">Create Coinflip</button>
+    </form>
+
     <h1>{{ coinflip.name }}</h1>
     <p>Number of Players: {{ coinflip.number_of_players }}</p>
     <p>Buy In: {{ coinflip.buy_in }} sats</p>
@@ -14,8 +25,29 @@
     </form>
 
     <script>
+        document.getElementById('create-coinflip-form').addEventListener('submit', async (e) => {
+            e.preventDefault()
+            const name = document.getElementById('name').value
+            const number_of_players = document.getElementById('number_of_players').value
+            const buy_in = document.getElementById('buy_in').value
+            const response = await fetch('/api/v1/coinflip', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, number_of_players, buy_in })
+            })
+            const data = await response.json()
+            if (data.id) {
+                // Redirect to the public page for the created coinflip game
+                window.location.href = `/coinflip/${data.id}`
+            } else {
+                alert('Error creating coinflip')
+            }
+        });
+
         document.getElementById('coinflip-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+            e.preventDefault()
             const lnaddress = document.getElementById('lnaddress').value;
             const response = await fetch(`/api/v1/coinflip/{{ coinflip.id }}/join`, {
                 method: 'POST',
@@ -24,14 +56,14 @@
                 },
                 body: JSON.stringify({ lnaddress })
             });
-            const data = await response.json();
+            const data = await response.json()
             if (data.invoice) {
                 // Display the invoice to the user
-                alert(`Invoice: ${data.invoice}`);
+                alert(`Invoice: ${data.invoice}`)
             } else {
-                alert('Error joining coinflip');
+                alert('Error joining coinflip')
             }
-        });
+        })
     </script>
 </div>
 {% endblock %}

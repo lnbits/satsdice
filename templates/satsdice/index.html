@@ -56,8 +56,19 @@
     <q-card>
       <q-card-section>
         <q-toggle v-model="coinflipEnabled" label="Enable Coinflip Games"></q-toggle>
-        <q-input v-if="coinflipEnabled" filled dense v-model.number="coinflipHaircut" type="number"
-          label="Coinflip Haircut (%)"></q-input>
+        <div class="row">
+          <div class="col">
+            <q-input v-if="coinflipEnabled" filled dense v-model.number="coinflipHaircut" type="number"
+            label="Coinflip Haircut (%)"></q-input>
+          </div>
+          <div class="col">
+            <q-input class="q-ml-md" v-if="coinflipEnabled" filled dense v-model.number="coinflipMaxPlayers" type="number"></q-input>
+          </div>
+          <div class="col">
+            <q-input class="q-ml-md" v-if="coinflipEnabled" filled dense v-model.number="coinflipMaxBet" type="number"
+            label="Max Bet Size (sats)"></q-input>
+          </div>
+        </div>
         <q-btn class="q-mt-md" v-if="coinflipEnabled" @click="saveCoinflipSettings" color="primary">Save Settings</q-btn>
       </q-card-section>
     </q-card>
@@ -220,7 +231,9 @@
           data: null
         },
         coinflipEnabled: false,
-        coinflipHaircut: 0
+        coinflipHaircut: 0,
+        coinflipMaxPlayers: 2,
+        coinflipMaxBet: 1000
       }
     },
     filters: {
@@ -426,12 +439,29 @@
         const settings = {
           enabled: this.coinflipEnabled,
           haircut: this.coinflipHaircut,
-          user_id: this.g.user.id
+          max_players: this.coinflipMaxPlayers,
+          max_bet: this.coinflipMaxBet
         }
         LNbits.api
-          .request('POST', '/satsdice/api/v1/coinflip/settings', null, settings)
+          .request('POST', '/satsdice/api/v1/coinflip/settings', 
+          this.g.user.wallets[0].adminkey,
+          settings)
           .then(response => {
             LNbits.utils.notifySuccess('Coinflip settings saved!')
+          })
+          .catch(err => {
+            LNbits.utils.notifyApiError(err)
+          })
+      },
+      getCoinflipSettings() {
+        LNbits.api
+          .request('GET', '/satsdice/api/v1/coinflip/settings', 
+          this.g.user.wallets[0].adminkey)
+          .then(response => {
+            this.coinflipEnabled = response.data.enabled
+            this.coinflipHaircut = response.data.haircut
+            this.coinflipMaxPlayers = response.data.max_players
+            this.coinflipMaxBet = response.data.max_bet
           })
           .catch(err => {
             LNbits.utils.notifyApiError(err)
@@ -442,6 +472,8 @@
       if (this.g.user.wallets.length) {
         var getPayLinks = this.getPayLinks
         getPayLinks()
+        var getCoinflipSettings = this.getCoinflipSettings
+        getCoinflipSettings()
         // this.checker = setInterval(() => {
         //   getPayLinks()
         // }, 20000)
