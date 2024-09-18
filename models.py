@@ -162,5 +162,7 @@ class CoinflipParticipant(BaseModel):
     paid: bool
 
 class CoinflipSettings(BaseModel):
+    id: str
+    user_id: str = Query(None)
     enabled: bool
     haircut: float

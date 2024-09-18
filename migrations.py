@@ -112,8 +112,10 @@ async def m007_add_coinflip_settings(db):
     await db.execute(
         """
         CREATE TABLE satsdice.settings (
-            key TEXT PRIMARY KEY,
-            value JSONB
+            id TEXT PRIMARY KEY,
+            haircut INTEGER NOT NULL,
+            user_id TEXT NOT NULL,
+            enabled BOOLEAN NOT NULL
         );
         """
     )

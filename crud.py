@@ -348,18 +348,18 @@ async def get_coinflip_participants(coinflip_id: str) -> List[CoinflipParticipan
     )
     return [CoinflipParticipant(**row) for row in rows]
 
-async def get_coinflip_settings() -> CoinflipSettings:
-    row = await db.fetchone("SELECT * FROM satsdice.settings WHERE key = 'coinflip'")
+async def get_coinflip_settings(coinflip_settings_id: str) -> CoinflipSettings:
+    row = await db.fetchone("SELECT * FROM satsdice.settings WHERE id = ?", (coinflip_settings_id,))
     if row:
         return CoinflipSettings(**row['value'])
     return CoinflipSettings(enabled=False, haircut=0.0)
 
 async def set_coinflip_settings(settings: CoinflipSettings) -> None:
+    coinflip_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO satsdice.settings (key, value)
-        VALUES ('coinflip', ?)
-        ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        INSERT INTO satsdice.settings (id, user_id, enabled, haircut)
+        VALUES (?, ?, ?, ?)
         """,
-        (settings.dict(),)
+        (coinflip_id, settings.user_id, settings.enabled, settings.haircut)
     )

@@ -157,7 +157,6 @@ async def display_coinflip(request: Request, coinflip_id: str):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Coinflip game does not exist."
         )
-
     return templates.TemplateResponse(
         "satsdice/coinflip.html",
         {

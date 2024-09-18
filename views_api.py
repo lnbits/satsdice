@@ -170,11 +170,11 @@ async def api_mark_participant_paid(coinflip_id: str, participant_id: str):
         pass
     return {"status": "success"}
 
-@satsdice_api_router.get("/api/v1/coinflip/settings", response_model=CoinflipSettings)
-async def api_get_coinflip_settings():
-    return await get_coinflip_settings()
+@satsdice_api_router.get("/api/v1/coinflip/settings/{coinflip_settings_id}", response_model=CoinflipSettings)
+async def api_get_coinflip_settings(coinflip_settings_id: str):
+    return await get_coinflip_settings(coinflip_settings_id)
 
 @satsdice_api_router.post("/api/v1/coinflip/settings", response_model=CoinflipSettings)
-async def api_set_coinflip_settings(settings: CoinflipSettings):
+async def api_set_coinflip_settings(settings: CoinflipSettings, wallet: WalletTypeInfo = Depends(require_admin_key)):
     await set_coinflip_settings(settings)
     return settings

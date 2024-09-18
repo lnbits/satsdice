@@ -425,7 +425,8 @@
       saveCoinflipSettings() {
         const settings = {
           enabled: this.coinflipEnabled,
-          haircut: this.coinflipHaircut
+          haircut: this.coinflipHaircut,
+          user_id: this.g.user.id
         }
         LNbits.api
           .request('POST', '/satsdice/api/v1/coinflip/settings', null, settings)
