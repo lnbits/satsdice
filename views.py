@@ -3,14 +3,12 @@ from http import HTTPStatus
 from io import BytesIO
 
 import pyqrcode
-from fastapi import APIRouter, Depends, Request
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from lnbits.core.crud import get_standalone_payment
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
 from lnbits.helpers import template_renderer
-from starlette.exceptions import HTTPException
-from starlette.responses import HTMLResponse
 
 from .crud import (
     create_satsdice_withdraw,
@@ -21,7 +19,6 @@ from .crud import (
 )
 from .models import CreateSatsDiceWithdraw
 
-templates = Jinja2Templates(directory="templates")
 satsdice_generic_router: APIRouter = APIRouter()
 
 
@@ -92,22 +89,18 @@ async def displaywin(request: Request, link_id: str, payment_hash: str):
     core_payment = await get_standalone_payment(payment_hash, incoming=True)
     status = (await core_payment.check_status()).success if core_payment else False
     if not rand < chance or not status:
-        await update_satsdice_payment(payment_hash, lost=1)
+        payment.lost = True
+        await update_satsdice_payment(payment)
         return satsdice_renderer().TemplateResponse(
             "satsdice/error.html",
             {"request": request, "link": satsdicelink.id, "paid": False, "lost": True},
         )
-    await update_satsdice_payment(payment_hash, paid=1)
-    paylink = await get_satsdice_payment(payment_hash)
-    if not paylink:
-        return satsdice_renderer().TemplateResponse(
-            "satsdice/error.html",
-            {"request": request, "link": satsdicelink.id, "paid": False, "lost": True},
-        )
+    payment.paid = True
+    await update_satsdice_payment(payment)
 
     data = CreateSatsDiceWithdraw(
         satsdice_pay=satsdicelink.id,
-        value=int(paylink.value * satsdicelink.multiplier),
+        value=int(payment.value * satsdicelink.multiplier),
         payment_hash=payment_hash,
         used=0,
     )
