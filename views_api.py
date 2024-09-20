@@ -162,7 +162,31 @@ async def api_create_coinflip(
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
         )
+    data.user_id = user.id
     return await create_coinflip(data)
+
+@satsdice_api_router.get("/api/v1/coinflip/settings", response_model=CoinflipSettings)
+async def api_get_coinflip_settings(wallet: WalletTypeInfo = Depends(get_key_type)):
+    user = await get_user(wallet.wallet.user)
+    if not user:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
+        )
+    return await get_coinflip_settings(user.id)
+
+@satsdice_api_router.post("/api/v1/coinflip/settings", response_model=CoinflipSettings)
+async def api_set_coinflip_settings(
+    settings: CoinflipSettings, 
+    wallet: WalletTypeInfo = Depends(require_admin_key)):
+
+    user = await get_user(wallet.wallet.user)
+    if not user:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
+        )
+    settings.user_id = user.id
+    settings = await set_coinflip_settings(settings)
+    return settings
 
 @satsdice_api_router.post("/api/v1/coinflip/{coinflip_id}/join")
 async def api_join_coinflip(coinflip_id: str, lnaddress: str):
@@ -178,21 +202,3 @@ async def api_mark_participant_paid(coinflip_id: str, participant_id: str):
         # Select a random winner and distribute the funds
         pass
     return {"status": "success"}
-
-@satsdice_api_router.get("/api/v1/coinflip/settings/{coinflip_settings_id}", response_model=CoinflipSettings)
-async def api_get_coinflip_settings(coinflip_settings_id: str):
-    return await get_coinflip_settings(coinflip_settings_id)
-
-@satsdice_api_router.post("/api/v1/coinflip/settings", response_model=CoinflipSettings)
-async def api_set_coinflip_settings(
-    settings: CoinflipSettings, 
-    wallet: WalletTypeInfo = Depends(require_admin_key)):
-
-    user = await get_user(wallet.wallet.user)
-    if not user:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
-        )
-    settings.user_id = user.id
-    settings = await set_coinflip_settings(settings)
-    return settings

@@ -343,9 +343,9 @@ async def add_coinflip_participant(coinflip_id: str, lnaddress: str) -> Coinflip
     return await get_coinflip_participant(participant_id)
 
 
-async def get_coinflip(coinflip_id: str) -> Optional[Coinflip]:
+async def get_coinflip(user_id: str) -> Optional[Coinflip]:
     row = await db.fetchone(
-        "SELECT * FROM satsdice.coinflip WHERE id = ?", (coinflip_id,)
+        "SELECT * FROM satsdice.coinflip WHERE user_id = ?", (user_id,)
     )
     return Coinflip(**row) if row else None
 
@@ -371,5 +371,5 @@ async def get_coinflip_settings(coinflip_settings_id: str) -> CoinflipSettings:
     row = await db.fetchone("SELECT * FROM satsdice.settings WHERE id = ?", (coinflip_settings_id,))
     if row:
         return CoinflipSettings(**row['value'])
-    return CoinflipSettings(enabled=False, haircut=0.0)
+    return CoinflipSettings(enabled=False, haircut=0.0, max_bet=0, max_players=0)
 

@@ -59,10 +59,11 @@
         <div class="row">
           <div class="col">
             <q-input v-if="coinflipEnabled" filled dense v-model.number="coinflipHaircut" type="number"
-            label="Coinflip Haircut (%)"></q-input>
+            label="Haircut on coiflips (%)"></q-input>
           </div>
           <div class="col">
-            <q-input class="q-ml-md" v-if="coinflipEnabled" filled dense v-model.number="coinflipMaxPlayers" type="number"></q-input>
+            <q-input class="q-ml-md" v-if="coinflipEnabled" filled dense v-model.number="coinflipMaxPlayers" type="number"
+            label="Max players per game"></q-input>
           </div>
           <div class="col">
             <q-input class="q-ml-md" v-if="coinflipEnabled" filled dense v-model.number="coinflipMaxBet" type="number"
