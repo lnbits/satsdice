@@ -11,9 +11,7 @@ from .models import (
     SatsdiceLink,
     SatsdicePayment,
     SatsdiceWithdraw,
-    CreateCoinflip,
     Coinflip,
-    CoinflipParticipant,
     CoinflipSettings,
 )
 
@@ -327,7 +325,7 @@ async def get_coinflip_settings_page(coinflip_page_id: str) -> Optional[Coinflip
         return None
 
 
-async def create_coinflip(data: CreateCoinflip) -> Coinflip:
+async def create_coinflip(data: Coinflip) -> Coinflip:
     coinflip_id = urlsafe_short_hash()
     await db.execute(
         """
@@ -352,21 +350,3 @@ async def get_coinflip(coinflip_id: str) -> Optional[Coinflip]:
         "SELECT * FROM satsdice.coinflip WHERE id = ?", (coinflip_id,)
     )
     return Coinflip(**row) if row else None
-
-async def get_coinflip_participant(participant_id: str) -> Optional[CoinflipParticipant]:
-    row = await db.fetchone(
-        "SELECT * FROM satsdice.coinflip_participants WHERE id = ?", (participant_id,)
-    )
-    return CoinflipParticipant(**row) if row else None
-
-async def mark_participant_paid(participant_id: str) -> None:
-    await db.execute(
-        "UPDATE satsdice.coinflip_participants SET paid = ? WHERE id = ?",
-        (True, participant_id),
-    )
-
-async def get_coinflip_participants(coinflip_id: str) -> List[CoinflipParticipant]:
-    rows = await db.fetchall(
-        "SELECT * FROM satsdice.coinflip_participants WHERE coinflip_id = ?", (coinflip_id,)
-    )
-    return [CoinflipParticipant(**row) for row in rows]

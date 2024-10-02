@@ -16,6 +16,7 @@ from .crud import (
     get_withdraw_hash_checkw,
     update_satsdice_pay,
     create_coinflip,
+    get_coinflip,
     get_coinflip_settings, 
     set_coinflip_settings,
 )
@@ -175,7 +176,8 @@ async def api_set_coinflip_settings(
 @satsdice_api_router.post("/api/v1/coinflip", status_code=HTTPStatus.OK)
 async def api_create_coinflip(
     data: Coinflip):
-    return await create_coinflip(data)
+    coinflip = await create_coinflip(data)
+    return coinflip.id
 
 @satsdice_api_router.get("/api/v1/coinflip/{coinflip_id}", status_code=HTTPStatus.OK)
 async def api_get_coinflip(coinflip_id: str):

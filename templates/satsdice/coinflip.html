@@ -3,24 +3,25 @@
     <div class="col-12 col-sm-6 col-md-5 col-lg-4">
         <q-card class="q-pa-lg">
             <q-card-section class="q-pa-none" v-if="activeGame">
-                <h1>{{ coinflip.name }}</h1>
-                <p>Number of Players: {{ coinflip.number_of_players }}</p>
-                <p>Buy In: {{ coinflip.buy_in }} sats</p>
-                <p>House Cut: {{ coinflip.house_cut }}%</p>
-
-                <form id="coinflip-form">
+                <h3 class=" q-my-none">${ coinflip.name }</h3>
+                <p>Number of Players: ${ coinflip.number_of_players }</p>
+                <p>Buy In: ${ coinflip.buy_in } sats</p>
+                <p>House Cut: ${ coinflip.house_cut }%</p>
+                <q-form @submit="joinGame" class="q-gutter-md">
                     <q-input type="text" model="lnaddress" required></q-input>
-                    <q-button type="joinGame">Join Coinflip</q-button>
-                </form>
+                    <q-button type="submit">Join Coinflip</q-button>
+                </q-form>
             </q-card-section>
             <q-card-section class="q-pa-none" v-else>
-                <h1>Create Coinflip Game</h1>
-                <form id="create-coinflip-form">
+                <h3 class=" q-my-none">Create Coinflip Game</h3>
+                <q-form @submit="createGame" class="q-gutter-md">
                     <q-input label="Name" type="text" model="coinflip.name" required></q-input>
-                    <q-input label="Number of players" type="number" model="coinflip.number_of_players" required></q-input>
-                    <q-input label="Buy in" type="number" model="coinflip.buy_in"></q-input>
-                    <q-button type="createGame">Create Coinflip</q-button>
-                </form>
+                    <q-input :label="'Number of players (max ' + coinflipMaxPlayers + ')'" type="number"
+                        model="coinflip.number_of_players" required></q-input>
+                    <q-input :label="'Buy in (max ' + coinflipMaxBet + 'sats)'" type="number"
+                        model="coinflip.buy_in"></q-input>
+                    <q-btn outline type="submit" class="q-mt-lg">Create Coinflip</q-btn>
+                </q-form>
             </q-card-section>
         </q-card>
     </div>
@@ -40,7 +41,10 @@
                     name: "",
                     number_of_players: 0,
                     buy_in: 0,
-                }
+                },
+                coinflipHaircut: '{{ coinflipHaircut }}',
+                coinflipMaxPlayers: '{{ coinflipMaxPlayers }}',
+                coinflipMaxBet: '{{ coinflipMaxBet }}',
             }
         },
         methods: {
@@ -56,6 +60,20 @@
                     });
             },
             createGame() {
+                if (this.coinflip.buy_in > this.coinflipMaxBet) {
+                    this.$q.notify({
+                        type: 'negative',
+                        message: `Max bet is ${this.coinflipMaxBet}`
+                    })
+                    return
+                }
+                if (this.coinflip.number_of_players > this.coinflipMaxPlayers) {
+                    this.$q.notify({
+                        type: 'negative',
+                        message: `Max players is ${this.coinflipMaxPlayers}`
+                    })
+                    return
+                }
                 fetch(`/satsdice/api/v1/coinflip`, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -66,7 +84,9 @@
                 })
                     .then(response => response.json())
                     .then(data => {
-                        this.coinflip = data
+                        const currentUrl = new URL(window.location.href)
+                        currentUrl.searchParams.set('game', data)
+                        window.location.href = currentUrl.toString()
                     });
             },
             joinGame() {
