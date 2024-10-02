@@ -55,30 +55,32 @@
     </q-card>
     <q-card>
       <q-card-section>
-        <q-toggle v-model="coinflipEnabled" label="Enable Coinflip Games"></q-toggle>
+        <q-toggle v-model="coinflip.coinflipEnabled" label="Enable Coinflip Games"></q-toggle>
         <div class="row">
           <div class="col">
-            <q-input v-if="coinflipEnabled" filled dense v-model.number="coinflipHaircut" type="number"
+            <q-input v-if="coinflip.coinflipEnabled" filled dense v-model.number="coinflip.coinflipHaircut" type="number"
             label="Haircut on coiflips (%)"></q-input>
           </div>
           <div class="col">
-            <q-input class="q-ml-md" v-if="coinflipEnabled" filled dense v-model.number="coinflipMaxPlayers" type="number"
+            <q-input class="q-ml-md" v-if="coinflip.coinflipEnabled" filled dense v-model.number="coinflip.coinflipMaxPlayers" type="number"
             label="Max players per game"></q-input>
           </div>
           <div class="col">
-            <q-input class="q-ml-md" v-if="coinflipEnabled" filled dense v-model.number="coinflipMaxBet" type="number"
+            <q-input class="q-ml-md" v-if="coinflip.coinflipEnabled" filled dense v-model.number="coinflip.coinflipMaxBet" type="number"
             label="Max Bet Size (sats)"></q-input>
           </div>
         </div>
-        <q-btn class="q-mt-md" v-if="coinflipEnabled" @click="saveCoinflipSettings" color="primary">Save Settings</q-btn>
+        <q-btn class="q-mt-md" v-if="coinflip.coinflipEnabled" @click="saveCoinflipSettings" color="primary">Save Settings</q-btn>
         <q-btn
+          class="q-ml-lg q-mt-md"
+          v-if="coinflip.coinflipEnabled"
           unelevated
           dense
-          size="sm"
+          size="col-md-5"
           icon="launch"
           :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
           type="a"
-          :href="props.row.tpos"
+          :href="'coinflip/' + coinflip.coinflipId"
           target="_blank"
           ><q-tooltip>Open Coinflip Page</q-tooltip></q-btn
         >
@@ -242,10 +244,13 @@
           show: false,
           data: null
         },
-        coinflipEnabled: false,
-        coinflipHaircut: 0,
-        coinflipMaxPlayers: 2,
-        coinflipMaxBet: 1000
+        coinflip: {
+          coinflipId: "",
+          coinflipEnabled: false,
+          coinflipHaircut: 0,
+          coinflipMaxPlayers: 2,
+          coinflipMaxBet: 1000
+        }
       }
     },
     filters: {
@@ -450,10 +455,10 @@
       saveCoinflipSettings() {
         const settings = {
           id: this.g.user.wallets[0].id,
-          enabled: this.coinflipEnabled,
-          haircut: this.coinflipHaircut,
-          max_players: this.coinflipMaxPlayers,
-          max_bet: this.coinflipMaxBet
+          enabled: this.coinflip.coinflipEnabled,
+          haircut: this.coinflip.coinflipHaircut,
+          max_players: this.coinflip.coinflipMaxPlayers,
+          max_bet: this.coinflip.coinflipMaxBet
         }
         LNbits.api
           .request('POST', '/satsdice/api/v1/coinflip/settings', 
@@ -475,10 +480,11 @@
           this.g.user.wallets[0].adminkey)
           .then(response => {
             console.log(response.data)
-            this.coinflipEnabled = response.data.enabled
-            this.coinflipHaircut = response.data.haircut
-            this.coinflipMaxPlayers = response.data.max_players
-            this.coinflipMaxBet = response.data.max_bet
+            this.coinflip.coinflipId = response.data.page_id
+            this.coinflip.coinflipEnabled = response.data.enabled
+            this.coinflip.coinflipHaircut = response.data.haircut
+            this.coinflip.coinflipMaxPlayers = response.data.max_players
+            this.coinflip.coinflipMaxBet = response.data.max_bet
           })
           .catch(err => {
             LNbits.utils.notifyApiError(err)

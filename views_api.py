@@ -15,15 +15,11 @@ from .crud import (
     get_satsdice_pays,
     get_withdraw_hash_checkw,
     update_satsdice_pay,
-    create_coinflip, 
-    add_coinflip_participant, 
-    mark_participant_paid, 
-    get_coinflip_participants, 
+    create_coinflip,
     get_coinflip_settings, 
-    set_coinflip_settings
+    set_coinflip_settings,
 )
 from .models import (
-    CreateCoinflip,
     Coinflip,
     CoinflipSettings,
     CreateSatsDiceLink,
@@ -153,18 +149,6 @@ async def api_withdraw_hash_retrieve(
 ################
 
 
-@satsdice_api_router.post("/api/v1/coinflip", status_code=HTTPStatus.OK)
-async def api_create_coinflip(
-    data: CreateCoinflip,
-    wallet: WalletTypeInfo = Depends(require_admin_key)):
-    user = await get_user(wallet.wallet.user)
-    if not user:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
-        )
-    data.id = user.id
-    return await create_coinflip(data)
-
 @satsdice_api_router.get("/api/v1/coinflip/settings", status_code=HTTPStatus.OK)
 async def api_get_coinflip_settings(wallet: WalletTypeInfo = Depends(get_key_type)):
     user = await get_user(wallet.wallet.user)
@@ -186,20 +170,13 @@ async def api_set_coinflip_settings(
         )
     settings.id = user.id
     settings = await set_coinflip_settings(settings)
-    logger.debug(f"settings: {settings}")
     return settings
 
-@satsdice_api_router.post("/api/v1/coinflip/{coinflip_id}/join")
-async def api_join_coinflip(coinflip_id: str, lnaddress: str):
-    participant = await add_coinflip_participant(coinflip_id, lnaddress)
-    # Create an invoice and return it to the frontend
-    return {"invoice": "lnbc1..."}
+@satsdice_api_router.post("/api/v1/coinflip", status_code=HTTPStatus.OK)
+async def api_create_coinflip(
+    data: Coinflip):
+    return await create_coinflip(data)
 
-@satsdice_api_router.post("/api/v1/coinflip/{coinflip_id}/mark_paid")
-async def api_mark_participant_paid(coinflip_id: str, participant_id: str):
-    await mark_participant_paid(participant_id)
-    participants = await get_coinflip_participants(coinflip_id)
-    if all(p.paid for p in participants):
-        # Select a random winner and distribute the funds
-        pass
-    return {"status": "success"}
+@satsdice_api_router.get("/api/v1/coinflip/{coinflip_id}", status_code=HTTPStatus.OK)
+async def api_get_coinflip(coinflip_id: str):
+    return await get_coinflip(coinflip_id)

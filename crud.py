@@ -316,14 +316,23 @@ async def get_coinflip_settings(coinflip_settings_id: str) -> Optional[CoinflipS
     row = await db.fetchone("SELECT * FROM satsdice.settings WHERE id = ?", (coinflip_settings_id,))
     if row:
         return CoinflipSettings(**row) if row else None
-    await set_coinflip_settings(CoinflipSettings(id=coinflip_settings_id))
+    else: 
+        return None
+
+async def get_coinflip_settings_page(coinflip_page_id: str) -> Optional[CoinflipSettings]:
+    row = await db.fetchone("SELECT * FROM satsdice.settings WHERE page_id = ?", (coinflip_page_id,))
+    if row:
+        return CoinflipSettings(**row) if row else None
+    else: 
+        return None
+
 
 async def create_coinflip(data: CreateCoinflip) -> Coinflip:
     coinflip_id = urlsafe_short_hash()
     await db.execute(
         """
         INSERT INTO satsdice.coinflip (
-            id, name, number_of_players, buy_in, created_at
+            id, name, number_of_players, buy_in, players
         )
         VALUES (?, ?, ?, ?, ?)
         """,
@@ -332,33 +341,15 @@ async def create_coinflip(data: CreateCoinflip) -> Coinflip:
             data.name,
             data.number_of_players,
             data.buy_in,
-            int(datetime.now().timestamp()),
+            0
         ),
     )
     return await get_coinflip(coinflip_id)
 
-async def add_coinflip_participant(coinflip_id: str, lnaddress: str) -> CoinflipParticipant:
-    participant_id = urlsafe_short_hash()
-    await db.execute(
-        """
-        INSERT INTO satsdice.coinflip_participants (
-            id, coinflip_id, lnaddress, paid
-        )
-        VALUES (?, ?, ?, ?)
-        """,
-        (
-            participant_id,
-            coinflip_id,
-            lnaddress,
-            False,
-        ),
-    )
-    return await get_coinflip_participant(participant_id)
 
-
-async def get_coinflip(user_id: str) -> Optional[Coinflip]:
+async def get_coinflip(coinflip_id: str) -> Optional[Coinflip]:
     row = await db.fetchone(
-        "SELECT * FROM satsdice.coinflip WHERE user_id = ?", (user_id,)
+        "SELECT * FROM satsdice.coinflip WHERE id = ?", (coinflip_id,)
     )
     return Coinflip(**row) if row else None
 

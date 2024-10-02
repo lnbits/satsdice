@@ -19,6 +19,7 @@ from .crud import (
     get_satsdice_withdraw,
     update_satsdice_payment,
     get_coinflip,
+    get_coinflip_settings_page,
 )
 from .models import CreateSatsDiceWithdraw
 
@@ -150,9 +151,9 @@ async def img(link_id):
         },
     )
 
-@satsdice_generic_router.get("/coinflip/{coinflip_id}", response_class=HTMLResponse)
-async def display_coinflip(request: Request, coinflip_id: str):
-    coinflip = await get_coinflip(coinflip_id)
+@satsdice_generic_router.get("/coinflip/{coinflip_page_id}", response_class=HTMLResponse)
+async def display_coinflip(request: Request, coinflip_page_id: str):
+    coinflip = await get_coinflip_settings_page(coinflip_page_id)
     if not coinflip:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Coinflip game does not exist."
@@ -161,6 +162,8 @@ async def display_coinflip(request: Request, coinflip_id: str):
         "satsdice/coinflip.html",
         {
             "request": request,
-            "coinflip": coinflip,
+            "coinflipHaircut": coinflip.haircut,
+            "coinflipMaxPlayers": coinflip.max_players,
+            "coinflipMaxBet": coinflip.max_bet,
         },
     )

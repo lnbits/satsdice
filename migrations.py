@@ -77,39 +77,7 @@ async def m004_make_hash_check(db):
 ### Coinflip ###
 ################
 
-async def m005_add_coinflip(db):
-    """
-    Creates a hash check table.
-    """
-    await db.execute(
-        """
-        CREATE TABLE satsdice.coinflip (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            number_of_players INTEGER NOT NULL,
-            buy_in INTEGER NOT NULL,
-            created_at INTEGER NOT NULL
-        );
-        """
-    )
-
-async def m006_add_coinflip_participants(db):
-    """
-    Creates a hash check table.
-    """
-    await db.execute(
-        """
-        CREATE TABLE satsdice.coinflip_participants (
-            id TEXT PRIMARY KEY,
-            coinflip_id TEXT NOT NULL,
-            lnaddress TEXT NOT NULL,
-            paid BOOLEAN NOT NULL,
-            FOREIGN KEY (coinflip_id) REFERENCES coinflip(id)
-        );
-        """
-    )
-
-async def m007_add_coinflip_settings(db):
+async def m005_add_coinflip_settings(db):
     """
     Creates a hash check table.
     """
@@ -122,6 +90,22 @@ async def m007_add_coinflip_settings(db):
             max_players INTEGER NOT NULL,
             max_bet INTEGER NOT NULL,
             enabled BOOLEAN NOT NULL
+        );
+        """
+    )
+
+async def m006_add_coinflip(db):
+    """
+    Creates a hash check table.
+    """
+    await db.execute(
+        """
+        CREATE TABLE satsdice.coinflip (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            number_of_players INTEGER NOT NULL,
+            buy_in INTEGER NOT NULL,
+            players TEXT NOT NULL
         );
         """
     )
