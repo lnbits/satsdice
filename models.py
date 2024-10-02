@@ -146,12 +146,12 @@ class CreateSatsDiceWithdraws(BaseModel):
 ################
 
 class CoinflipSettings(BaseModel):
-    id: Optional[str]
-    user_id: Optional[str]
-    max_players: int
-    max_bet: int
-    enabled: bool
-    haircut: float
+    id: str
+    page_id: str
+    max_players: int = Query(0)
+    max_bet: int = Query(0)
+    enabled: bool = Query(False)
+    haircut: float = Query(0)
 
 class CreateCoinflip(BaseModel):
     name: str

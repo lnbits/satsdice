@@ -291,19 +291,32 @@ async def get_withdraw_hash_checkw(the_hash: str, lnurl_id: str):
 ################
 
 async def set_coinflip_settings(settings: CoinflipSettings) -> None:
-    if not settings.id:
-        settings_id = urlsafe_short_hash()
+    fetch_settings = await get_coinflip_settings(settings.id)
+    if fetch_settings:
+        await db.execute(
+            """
+            UPDATE satsdice.settings
+            SET max_players = ?, max_bet = ?, enabled = ?, haircut = ?
+            WHERE id = ?
+            """,
+            (settings.max_players, settings.max_bet, settings.enabled, settings.haircut, settings.id),
+        )
     else:
-        settings_id = settings.id
-    await db.execute(
-        """
-        INSERT INTO satsdice.settings (id, user_id, max_players, max_bet, enabled, haircut)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (settings_id, settings.user_id, settings.max_players, settings.max_bet, settings.enabled, settings.haircut)
-    )
-    return await get_coinflip_settings(settings_id)
+        page_id = urlsafe_short_hash()
+        await db.execute(
+            """
+            INSERT INTO satsdice.settings (id, page_id, max_players, max_bet, enabled, haircut)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (settings.id, page_id, settings.max_players, settings.max_bet, settings.enabled, settings.haircut)
+        )
+    return await get_coinflip_settings(settings.id)
 
+async def get_coinflip_settings(coinflip_settings_id: str) -> Optional[CoinflipSettings]:
+    row = await db.fetchone("SELECT * FROM satsdice.settings WHERE id = ?", (coinflip_settings_id,))
+    if row:
+        return CoinflipSettings(**row) if row else None
+    await set_coinflip_settings(CoinflipSettings(id=coinflip_settings_id))
 
 async def create_coinflip(data: CreateCoinflip) -> Coinflip:
     coinflip_id = urlsafe_short_hash()
@@ -366,10 +379,3 @@ async def get_coinflip_participants(coinflip_id: str) -> List[CoinflipParticipan
         "SELECT * FROM satsdice.coinflip_participants WHERE coinflip_id = ?", (coinflip_id,)
     )
     return [CoinflipParticipant(**row) for row in rows]
-
-async def get_coinflip_settings(coinflip_settings_id: str) -> CoinflipSettings:
-    row = await db.fetchone("SELECT * FROM satsdice.settings WHERE id = ?", (coinflip_settings_id,))
-    if row:
-        return CoinflipSettings(**row['value'])
-    return CoinflipSettings(enabled=False, haircut=0.0, max_bet=0, max_players=0)
-

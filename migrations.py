@@ -117,10 +117,10 @@ async def m007_add_coinflip_settings(db):
         """
         CREATE TABLE satsdice.settings (
             id TEXT PRIMARY KEY,
+            page_id TEXT NOT NULL,
             haircut INTEGER NOT NULL,
             max_players INTEGER NOT NULL,
             max_bet INTEGER NOT NULL,
-            user_id TEXT NOT NULL,
             enabled BOOLEAN NOT NULL
         );
         """
