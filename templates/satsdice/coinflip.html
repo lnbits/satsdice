@@ -1,31 +1,62 @@
 {% extends "public.html" %} {% block page %}
-<div class="row q-col-gutter-md justify-center">
-    <div class="col-12 col-sm-6 col-md-5 col-lg-4">
-        <q-card class="q-pa-lg">
-            <q-card-section class="q-pa-none" v-if="activeGame">
-                <h3 class=" q-my-none">${ coinflip.name }</h3>
-                <p>Number of Players: ${ coinflip.number_of_players }</p>
-                <p>Buy In: ${ coinflip.buy_in } sats</p>
-                <p>House Cut: ${ coinflip.house_cut }%</p>
-                <q-form @submit="joinGame" class="q-gutter-md">
-                    <q-input type="text" model="lnaddress" required></q-input>
-                    <q-button type="submit">Join Coinflip</q-button>
-                </q-form>
-            </q-card-section>
-            <q-card-section class="q-pa-none" v-else>
-                <h3 class=" q-my-none">Create Coinflip Game</h3>
-                <q-form @submit="createGame" class="q-gutter-md">
-                    <q-input label="Name" type="text" model="coinflip.name" required></q-input>
-                    <q-input :label="'Number of players (max ' + coinflipMaxPlayers + ')'" type="number"
-                        model="coinflip.number_of_players" required></q-input>
-                    <q-input :label="'Buy in (max ' + coinflipMaxBet + 'sats)'" type="number"
-                        model="coinflip.buy_in"></q-input>
-                    <q-btn outline type="submit" class="q-mt-lg">Create Coinflip</q-btn>
-                </q-form>
-            </q-card-section>
-        </q-card>
-    </div>
-</div>
+
+<q-card class="fixed-center q-pa-xl" style="width:600px">
+    <q-card-section class="q-pa-none" v-if="activeGame">{% raw %}
+        <center>
+            <h3 class=" q-my-none q-mb-xl">{{ coinflip.name }}</h3>
+        </center>
+        <div class="row">
+            <div class="col">
+                <center>
+                    <q-badge outline size="xl" color="secondary">
+                        <div class="text-subtitle1">
+                            No. of Players: {{coinflip.number_of_players}}
+                        </div>
+                    </q-badge>
+                </center>
+            </div>
+            <div class="col">
+                <center>
+                    <q-badge outline size="xl" color="secondary">
+                        <div class="text-subtitle1">
+                            Buy In: {{coinflip.buy_in}} sats
+                        </div>
+                    </q-badge>
+                </center>
+            </div>
+            <div class="col">
+                <center>
+
+                    <q-badge outline size="xl" color="secondary">
+                        <div class="text-subtitle1">
+                            House Cut: {{coinflipHaircut}} %
+                        </div>
+                    </q-badge>
+                </center>
+            </div>
+        </div>{% endraw %}
+        <q-form @submit="joinGame" class="q-gutter-md">
+            <q-input label="Your LNadress" class="q-mt-lg" type="text" v-model="lnaddress" required></q-input>
+            <q-btn outline class="q-mt-lg" type="submit">Join Coinflip</q-btn>
+            <q-btn class="q-ml-lg q-mt-md" unelevated dense size="col-md-5" icon="link"
+                :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'" @click="copyText"><q-tooltip>Copy coinflip
+                    link</q-tooltip></q-btn>
+        </q-form>
+    </q-card-section>
+    <q-card-section class="q-pa-none" v-else>
+        <h3 class=" q-my-none">Create Coinflip Game</h3>
+        <q-form @submit="createGame" class="q-gutter-md">
+            <q-input label="Name" type="text" v-model="coinflip.name" required></q-input>
+            <q-input :label="'Number of players (max ' + coinflipMaxPlayers + ')'" type="number"
+                v-model="coinflip.number_of_players" required></q-input>
+            <q-input :label="'Buy in (max ' + coinflipMaxBet + 'sats)'" type="number"
+                v-model="coinflip.buy_in"></q-input>
+            <q-btn outline type="submit" class="q-mt-lg">Create Coinflip</q-btn>
+        </q-form>
+    </q-card-section>
+</q-card>
+
+
 {% endblock %} {% block scripts %}
 <script>
     Vue.component(VueQrcode.name, VueQrcode)
@@ -42,9 +73,11 @@
                     number_of_players: 0,
                     buy_in: 0,
                 },
-                coinflipHaircut: '{{ coinflipHaircut }}',
-                coinflipMaxPlayers: '{{ coinflipMaxPlayers }}',
-                coinflipMaxBet: '{{ coinflipMaxBet }}',
+                coinflipHaircut: parseInt('{{ coinflipHaircut }}'),
+                coinflipMaxPlayers: parseInt('{{ coinflipMaxPlayers }}'),
+                coinflipMaxBet: parseInt('{{ coinflipMaxBet }}'),
+                coinflipPageId: '{{ coinflipPageId }}',
+                lnaddress: "",
             }
         },
         methods: {
@@ -52,15 +85,29 @@
                 const urlParams = new URLSearchParams(window.location.search)
                 return urlParams.get(param)
             },
-            getGame() {
-                fetch(`/satsdice/api/v1/coinflip/${this.gameId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        this.coinflip = data
-                    });
+            async getGame() {
+                self = this
+                const response = await LNbits.api.request(
+                    'GET',
+                    `/satsdice/api/v1/coinflip/${this.gameId}`,
+                    ''
+                )
+                console.log(response.data)
+                if (response.data) {
+                    self.coinflip = response.data
+                    self.activeGame = true
+                }
             },
-            createGame() {
-                if (this.coinflip.buy_in > this.coinflipMaxBet) {
+            async createGame() {
+                self = this
+                const data = {
+                    name: self.coinflip.name,
+                    number_of_players: parseInt(self.coinflip.number_of_players),
+                    buy_in: parseInt(self.coinflip.buy_in),
+                    page_id: self.coinflipPageId
+                }
+                console.log(data)
+                if (data.buy_in > self.coinflipMaxBet) {
                     this.$q.notify({
                         type: 'negative',
                         message: `Max bet is ${this.coinflipMaxBet}`
@@ -74,47 +121,62 @@
                     })
                     return
                 }
-                fetch(`/satsdice/api/v1/coinflip`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        name: this.coinflip.name,
-                        number_of_players: this.coinflip.number_of_players,
-                        buy_in: this.coinflip.buy_in
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        const currentUrl = new URL(window.location.href)
-                        currentUrl.searchParams.set('game', data)
-                        window.location.href = currentUrl.toString()
-                    });
-            },
-            joinGame() {
-                fetch(`/satsdice/api/v1/coinflip/${this.gameId}/join`, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        lnaddress: this.lnaddress
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        this.coinflip = data
-                    });
-            }
-        },
-        mounted() {
-            const gameId = this.getQueryParam('game')
-            if (gameId) {
-                this.gameId = gameId
-                game = this.getGame()
-                if (game) {
-                    this.coinflip = game
-                    this.activeGame = true
-                } else {
-                    this.activeGame = false
+                try {
+                    const response = await LNbits.api.request(
+                        'POST',
+                        '/satsdice/api/v1/coinflip/',
+                        '',
+                        data
+                    )
+                    console.log(response.data)
+                    if (response.data) {
+                        console.log(response.data)
+                        this.activeGame = true
+                        window.history.replaceState(null, null, "?game=" + response.data)
+                    }
+
+                } catch (error) {
+                    console.log("poop")
+                    LNbits.utils.notifyApiError(error)
                 }
-            } else {
-                this.activeGame = false
+            },
+            async joinGame() {
+                try {
+                    const data = {
+                        lnaddress: this.lnaddress
+                    }
+
+                    const response = await LNbits.api.request(
+                        'POST',
+                        '/satsdice/api/v1/coinflip/' + this.gameId + '/join',
+                        '',
+                        data
+                    )
+                    console.log(response.data)
+                    if (response.data) {
+                        console.log(response.data)
+                        this.coinflip = data
+                    }
+                    window.location.reload()
+                } catch (error) {
+                    console.log("poop")
+                    LNbits.utils.notifyApiError(error)
+                }
+            },
+            copyText: function (text, message) {
+                var notify = this.$q.notify
+                Quasar.utils.copyToClipboard(window.location.href).then(function () {
+                    notify({
+                        message: 'Copied coinflip link!',
+                        position: 'bottom'
+                    })
+                })
+            },
+        },
+        async mounted() {
+            this.gameId = this.getQueryParam('game')
+            if (this.gameId) {
+                game = await this.getGame()
             }
         }
     })

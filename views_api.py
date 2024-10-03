@@ -7,6 +7,7 @@ from lnbits.decorators import get_key_type, require_admin_key
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 from starlette.exceptions import HTTPException
 from loguru import logger
+from datetime import datetime
 
 from .crud import (
     create_satsdice_pay,
@@ -19,6 +20,7 @@ from .crud import (
     get_coinflip,
     get_coinflip_settings, 
     set_coinflip_settings,
+    get_latest_coinflip,
 )
 from .models import (
     Coinflip,
@@ -173,9 +175,19 @@ async def api_set_coinflip_settings(
     settings = await set_coinflip_settings(settings)
     return settings
 
-@satsdice_api_router.post("/api/v1/coinflip", status_code=HTTPStatus.OK)
+@satsdice_api_router.post("/api/v1/coinflip/", status_code=HTTPStatus.OK)
 async def api_create_coinflip(
     data: Coinflip):
+    latest_coinflip = await get_latest_coinflip(data.page_id)
+    logger.debug(data)
+    logger.debug(latest_coinflip.created_at)
+    logger.debug(datetime.now().timestamp())
+    
+    if latest_coinflip: 
+        if latest_coinflip.created_at + 120 > datetime.now().timestamp():
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST, detail="You can only create a coinflip every 2 mins"
+            )
     coinflip = await create_coinflip(data)
     return coinflip.id
 

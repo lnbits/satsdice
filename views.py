@@ -165,5 +165,6 @@ async def display_coinflip(request: Request, coinflip_page_id: str):
             "coinflipHaircut": coinflip.haircut,
             "coinflipMaxPlayers": coinflip.max_players,
             "coinflipMaxBet": coinflip.max_bet,
+            "coinflipPageId": coinflip.page_id,
         },
     )

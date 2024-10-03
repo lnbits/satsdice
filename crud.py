@@ -330,16 +330,17 @@ async def create_coinflip(data: Coinflip) -> Coinflip:
     await db.execute(
         """
         INSERT INTO satsdice.coinflip (
-            id, name, number_of_players, buy_in, players
+            id, name, number_of_players, buy_in, players, page_id
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             coinflip_id,
             data.name,
             data.number_of_players,
             data.buy_in,
-            0
+            0,
+            data.page_id
         ),
     )
     return await get_coinflip(coinflip_id)
@@ -348,5 +349,11 @@ async def create_coinflip(data: Coinflip) -> Coinflip:
 async def get_coinflip(coinflip_id: str) -> Optional[Coinflip]:
     row = await db.fetchone(
         "SELECT * FROM satsdice.coinflip WHERE id = ?", (coinflip_id,)
+    )
+    return Coinflip(**row) if row else None
+
+async def get_latest_coinflip(page_id: str) -> Optional[Coinflip]:
+    row = await db.fetchone(
+        "SELECT * FROM satsdice.coinflip WHERE page_id = ? ORDER BY created_at DESC", (page_id,)
     )
     return Coinflip(**row) if row else None
