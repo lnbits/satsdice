@@ -288,6 +288,8 @@ async def get_withdraw_hash_checkw(the_hash: str, lnurl_id: str):
 ### Coinflip ###
 ################
 
+# Coinflip Settings
+
 async def set_coinflip_settings(settings: CoinflipSettings) -> None:
     fetch_settings = await get_coinflip_settings(settings.id)
     if fetch_settings:
@@ -324,6 +326,7 @@ async def get_coinflip_settings_page(coinflip_page_id: str) -> Optional[Coinflip
     else: 
         return None
 
+# Coinflips
 
 async def create_coinflip(data: Coinflip) -> Coinflip:
     coinflip_id = urlsafe_short_hash()
@@ -345,6 +348,16 @@ async def create_coinflip(data: Coinflip) -> Coinflip:
     )
     return await get_coinflip(coinflip_id)
 
+async def update_coinflip(coinflip: Coinflip) -> Coinflip:
+    await db.execute(
+        """
+        UPDATE satsdice.coinflip
+        SET players = ?
+        WHERE id = ?
+        """,
+        (coinflip.players, coinflip.id),
+    )
+    return await get_coinflip(coinflip.id)
 
 async def get_coinflip(coinflip_id: str) -> Optional[Coinflip]:
     row = await db.fetchone(

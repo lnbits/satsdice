@@ -163,4 +163,5 @@ class Coinflip(BaseModel):
     buy_in: int = Query(0)
     players: str = Query(None)
     page_id: str = Query(None)
+    completed: bool = Query(False)
     created_at: float = Query(0)

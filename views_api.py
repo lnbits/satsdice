@@ -195,6 +195,14 @@ async def api_create_coinflip(
     ln_address: str):
     coinflip_settings = get_coinflip_settings_page(data.page_id)
     coinflip_game = get_coinflip(game_id)
+    if coinflip_game.completed:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="This game is already full"
+        )
+    if !coinflip_settings.enabled:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="This game is disabled"
+        )
     try:
         payment_hash, payment_request = await create_invoice(
             wallet_id=coinflip_settings.wallet_id,
@@ -203,6 +211,7 @@ async def api_create_coinflip(
             extra={
                 "tag": "satsdice_coinflip",
                 "ln_address": ln_address,
+                "game_id": game_id,
             },
         )
     except Exception as e:
