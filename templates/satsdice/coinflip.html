@@ -1,7 +1,7 @@
 {% extends "public.html" %} {% block page %}
 
 <q-card class="fixed-center q-pa-xl" style="width:600px">
-    <q-card-section class="q-pa-none" v-if="activeGame">{% raw %}
+    <q-card-section class="q-pa-none" v-if="activeGame && !gameComplete">{% raw %}
         <center>
             <h3 class=" q-my-none q-mb-xl">{{ coinflip.name }}</h3>
         </center>
@@ -43,7 +43,7 @@
                     link</q-tooltip></q-btn>
         </q-form>
     </q-card-section>
-    <q-card-section class="q-pa-none" v-else>
+    <q-card-section class="q-pa-none" v-if="!activeGame && !gameComplete">
         <h3 class=" q-my-none">Create Coinflip Game</h3>
         <q-form @submit="createGame" class="q-gutter-md">
             <q-input label="Name" type="text" v-model="coinflip.name" required></q-input>
@@ -53,6 +53,12 @@
                 v-model="coinflip.buy_in"></q-input>
             <q-btn outline type="submit" class="q-mt-lg">Create Coinflip</q-btn>
         </q-form>
+    </q-card-section>
+    <q-card-section v-if="gameComplete" class="q-pa-none" v-else>
+        <center>
+            <h2 class=" q-my-none">Game Complete</h2>
+            <q-icon color="teal" name="check" size="30em"></q-icon>
+        </center>
     </q-card-section>
 </q-card>
 
@@ -67,6 +73,7 @@
         data() {
             return {
                 activeGame: false,
+                gameComplete: false,
                 gameId: "",
                 coinflip: {
                     name: "",
@@ -172,7 +179,10 @@
         async mounted() {
             this.gameId = this.getQueryParam('game')
             if (this.gameId) {
-                game = await this.getGame()
+                await this.getGame()
+                if(this.coinflip.players.length > this.coinflipMaxPlayers){
+                    this.gameComplete = true
+                }
             }
         }
     })
