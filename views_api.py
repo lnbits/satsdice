@@ -8,6 +8,7 @@ from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 from starlette.exceptions import HTTPException
 from loguru import logger
 from datetime import datetime
+from lnbits.core.services import create_invoice
 
 from .crud import (
     create_satsdice_pay,
@@ -178,11 +179,7 @@ async def api_set_coinflip_settings(
 @satsdice_api_router.post("/api/v1/coinflip/", status_code=HTTPStatus.OK)
 async def api_create_coinflip(
     data: Coinflip):
-    latest_coinflip = await get_latest_coinflip(data.page_id)
-    logger.debug(data)
-    logger.debug(latest_coinflip.created_at)
-    logger.debug(datetime.now().timestamp())
-    
+    latest_coinflip = await get_latest_coinflip(data.page_id)    
     if latest_coinflip: 
         if latest_coinflip.created_at + 120 > datetime.now().timestamp():
             raise HTTPException(
@@ -190,6 +187,27 @@ async def api_create_coinflip(
             )
     coinflip = await create_coinflip(data)
     return coinflip.id
+
+@satsdice_api_router.post("/api/v1/coinflip/join/{game_id}", status_code=HTTPStatus.OK)
+async def api_create_coinflip(
+    data: Coinflip,
+    game_id: str,
+    ln_address: str):
+    coinflip_settings = get_coinflip_settings_page(data.page_id)
+    coinflip_game = get_coinflip(game_id)
+    try:
+        payment_hash, payment_request = await create_invoice(
+            wallet_id=coinflip_settings.wallet_id,
+            amount=coinflip_game.buy_in,
+            memo=f"Coinflip {coinflip_game.name} for {ln_address}",
+            extra={
+                "tag": "satsdice_coinflip",
+                "ln_address": ln_address,
+            },
+        )
+    except Exception as e:
+        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e))
+    return {"payment_hash": payment_hash, "payment_request": payment_request}
 
 @satsdice_api_router.get("/api/v1/coinflip/{coinflip_id}", status_code=HTTPStatus.OK)
 async def api_get_coinflip(coinflip_id: str):

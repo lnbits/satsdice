@@ -134,9 +134,7 @@
                         this.activeGame = true
                         window.history.replaceState(null, null, "?game=" + response.data)
                     }
-
                 } catch (error) {
-                    console.log("poop")
                     LNbits.utils.notifyApiError(error)
                 }
             },
@@ -148,18 +146,16 @@
 
                     const response = await LNbits.api.request(
                         'POST',
-                        '/satsdice/api/v1/coinflip/' + this.gameId + '/join',
+                        '/satsdice/api/v1/coinflip/join/' + this.coinflipPageId,
                         '',
                         data
                     )
                     console.log(response.data)
                     if (response.data) {
                         console.log(response.data)
-                        this.coinflip = data
+                        // this.coinflip = data
                     }
-                    window.location.reload()
                 } catch (error) {
-                    console.log("poop")
                     LNbits.utils.notifyApiError(error)
                 }
             },

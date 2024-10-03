@@ -294,19 +294,19 @@ async def set_coinflip_settings(settings: CoinflipSettings) -> None:
         await db.execute(
             """
             UPDATE satsdice.settings
-            SET max_players = ?, max_bet = ?, enabled = ?, haircut = ?
+            SET max_players = ?, max_bet = ?, enabled = ?, haircut = ?, wallet_id = ?
             WHERE id = ?
             """,
-            (settings.max_players, settings.max_bet, settings.enabled, settings.haircut, settings.id),
+            (settings.max_players, settings.max_bet, settings.enabled, settings.haircut, settings.wallet_id, settings.id),
         )
     else:
         page_id = urlsafe_short_hash()
         await db.execute(
             """
-            INSERT INTO satsdice.settings (id, page_id, max_players, max_bet, enabled, haircut)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO satsdice.settings (id, page_id, max_players, max_bet, enabled, haircut, wallet_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (settings.id, page_id, settings.max_players, settings.max_bet, settings.enabled, settings.haircut)
+            (settings.id, page_id, settings.max_players, settings.max_bet, settings.enabled, settings.haircut, settings.wallet_id)
         )
     return await get_coinflip_settings(settings.id)
 

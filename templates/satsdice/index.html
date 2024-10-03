@@ -69,6 +69,16 @@
             <q-input class="q-ml-md" v-if="coinflip.coinflipEnabled" filled dense v-model.number="coinflip.coinflipMaxBet" type="number"
             label="Max Bet Size (sats)"></q-input>
           </div>
+          <div class="col">
+          <q-select
+          filled
+          dense
+          emit-value
+          v-model="coinflip.wallet_id"
+          :options="g.user.walletOptions"
+          label="Wallet *"
+        ></q-select>
+      </div>
         </div>
         <q-btn class="q-mt-md" v-if="coinflip.coinflipEnabled" @click="saveCoinflipSettings" color="primary">Save Settings</q-btn>
         <q-btn
@@ -249,7 +259,8 @@
           coinflipEnabled: false,
           coinflipHaircut: 0,
           coinflipMaxPlayers: 2,
-          coinflipMaxBet: 1000
+          coinflipMaxBet: 1000,
+          wallet_id: null
         }
       }
     },
