@@ -1,12 +1,13 @@
 import json
 from sqlite3 import Row
-from typing import Dict, Optional
-
+from typing import Dict, Optional, List
+from datetime import datetime
 from fastapi import Query, Request
 from lnurl import Lnurl
 from lnurl import encode as lnurl_encode
 from lnurl.types import LnurlPayMetadata
-from pydantic import BaseModel
+
+from pydantic import BaseModel, Field
 
 
 class SatsdiceLink(BaseModel):
@@ -140,3 +141,27 @@ class CreateSatsDiceWithdraws(BaseModel):
     uses: int = Query(0)
     wait_time: str = Query(None)
     is_unique: bool = Query(False)
+
+
+################
+### Coinflip ###
+################
+
+class CoinflipSettings(BaseModel):
+    id: str = Query(None)
+    page_id: str = Query(None)
+    wallet_id: str = Query(None)
+    max_players: int = Query(0)
+    max_bet: int = Query(0)
+    enabled: bool = Query(False)
+    haircut: float = Query(0)
+
+class Coinflip(BaseModel):
+    id: str = Query(None)
+    name: str = Query(None)
+    number_of_players: int = Query(0)
+    buy_in: int = Query(0)
+    players: str = Query(None)
+    page_id: str = Query(None)
+    completed: bool = Query(False)
+    created_at: float = Query(0)
