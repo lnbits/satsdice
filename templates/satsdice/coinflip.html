@@ -62,6 +62,19 @@
     </q-card-section>
 </q-card>
 
+<q-dialog v-model="qr.show" position="top">
+    <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
+        <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
+            <lnbits-qrcode :value="qr.payment_request" :options="{width: 800}" class="rounded-borders"></lnbits-qrcode>
+        </q-responsive>
+        <div class="text-h6 q-mb-md">Pay this invoice to join the game</div>
+        <div class="row q-mt-lg">
+            <q-btn outline color="grey" @click="copyText(qr.payment_request, 'Invoice URL copied to clipboard!')">Copy
+                URL</q-btn>
+            <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
+        </div>
+    </q-card>
+</q-dialog>
 
 {% endblock %} {% block scripts %}
 <script>
@@ -85,6 +98,11 @@
                 coinflipMaxBet: parseInt('{{ coinflipMaxBet }}'),
                 coinflipPageId: '{{ coinflipPageId }}',
                 lnaddress: "",
+                qr: {
+                    show: false,
+                    payment_request: "",
+                    payment_hash: ""
+                }
             }
         },
         methods: {
@@ -146,9 +164,12 @@
                 }
             },
             async joinGame() {
+                self = this
                 try {
                     const data = {
-                        lnaddress: this.lnaddress
+                        game_id: this.gameId,
+                        page_id: this.coinflipPageId,
+                        ln_address: this.lnaddress
                     }
 
                     const response = await LNbits.api.request(
@@ -157,14 +178,73 @@
                         '',
                         data
                     )
-                    console.log(response.data)
                     if (response.data) {
-                        console.log(response.data)
+                        console.log(response.data.payment_request)
+                        self.qr.payment_request = response.data.payment_request
+                        self.qr.payment_hash = response.data.payment_hash
+                        self.qr.show = true
+                        this.websocket()
+
                         // this.coinflip = data
                     }
                 } catch (error) {
                     LNbits.utils.notifyApiError(error)
                 }
+            },
+            confettiFireworks() {
+                var duration = 3 * 1000
+                var animationEnd = Date.now() + duration
+                var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 }
+
+                function randomInRange(min, max) {
+                    return Math.random() * (max - min) + min
+                }
+
+                var interval = setInterval(function () {
+                    var timeLeft = animationEnd - Date.now()
+
+                    if (timeLeft <= 0) {
+                        return clearInterval(interval)
+                    }
+
+                    var particleCount = 5 * (timeLeft / duration)
+                    // since particles fall down, start a bit higher than random
+                    confetti({
+                        ...defaults,
+                        particleCount,
+                        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+                    })
+                    confetti({
+                        ...defaults,
+                        particleCount,
+                        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+                    })
+                }, 250)
+            },
+            websocket: function () {
+                const url = new URL(window.location)
+                url.protocol = url.protocol === 'https:' ? 'wss' : 'ws'
+                url.pathname = `/api/v1/ws/${qr.payment_hash}`
+                const ws = new WebSocket(url)
+                ws.addEventListener('message', async ({ data }) => {
+                    if (data == "paid") {
+                        this.$q.notify({
+                            type: 'positive',
+                            message: 'Invoice Paid!'
+                        })
+                        this.qr.show = false
+                        ws.close()
+                    }
+                    if (data == "won") {
+                        this.$q.notify({
+                            type: 'positive',
+                            message: 'You flipping won!!! Winner! Winner! Chicken Dinner!'
+                        })
+                        this.confettiFireworks()
+                        this.qr.show = false
+                        ws.close()
+                    }
+                })
             },
             copyText: function (text, message) {
                 var notify = this.$q.notify
@@ -180,7 +260,7 @@
             this.gameId = this.getQueryParam('game')
             if (this.gameId) {
                 await this.getGame()
-                if(this.coinflip.players.length > this.coinflipMaxPlayers){
+                if (this.coinflip.players.length > this.coinflipMaxPlayers) {
                     this.gameComplete = true
                 }
             }

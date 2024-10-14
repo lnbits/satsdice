@@ -333,9 +333,9 @@ async def create_coinflip(data: Coinflip) -> Coinflip:
     await db.execute(
         """
         INSERT INTO satsdice.coinflip (
-            id, name, number_of_players, buy_in, players, page_id
+            id, name, number_of_players, buy_in, players, page_id, completed
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (
             coinflip_id,
@@ -343,7 +343,8 @@ async def create_coinflip(data: Coinflip) -> Coinflip:
             data.number_of_players,
             data.buy_in,
             0,
-            data.page_id
+            data.page_id,
+            False
         ),
     )
     return await get_coinflip(coinflip_id)

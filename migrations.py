@@ -108,7 +108,7 @@ async def m006_add_coinflip(db):
             buy_in INTEGER NOT NULL,
             players TEXT NOT NULL,
             page_id TEXT NOT NULL,
-            completed BOOLEAN NOT NULL,
+            completed BOOLEAN,
             created_at TIMESTAMP NOT NULL DEFAULT """
         + db.timestamp_now
         + """

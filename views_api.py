@@ -22,11 +22,13 @@ from .crud import (
     get_coinflip_settings, 
     set_coinflip_settings,
     get_latest_coinflip,
+    get_coinflip_settings_page,
 )
 from .models import (
     Coinflip,
     CoinflipSettings,
     CreateSatsDiceLink,
+    JoinCoinflipGame,
 )
 
 satsdice_api_router = APIRouter()
@@ -190,16 +192,22 @@ async def api_create_coinflip(
 
 @satsdice_api_router.post("/api/v1/coinflip/join/{game_id}", status_code=HTTPStatus.OK)
 async def api_create_coinflip(
-    data: Coinflip,
-    game_id: str,
-    ln_address: str):
-    coinflip_settings = get_coinflip_settings_page(data.page_id)
-    coinflip_game = get_coinflip(game_id)
+    data: JoinCoinflipGame):
+    coinflip_settings = await get_coinflip_settings_page(data.page_id)
+    coinflip_game = await get_coinflip(data.game_id)
+    if not coinflip_game:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="No game found"
+        )
+    if not coinflip_settings:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Coinflip settings missing"
+        )
     if coinflip_game.completed:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail="This game is already full"
         )
-    if !coinflip_settings.enabled:
+    if not coinflip_settings.enabled:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail="This game is disabled"
         )
@@ -207,11 +215,11 @@ async def api_create_coinflip(
         payment_hash, payment_request = await create_invoice(
             wallet_id=coinflip_settings.wallet_id,
             amount=coinflip_game.buy_in,
-            memo=f"Coinflip {coinflip_game.name} for {ln_address}",
+            memo=f"Coinflip {coinflip_game.name} for {data.ln_address}",
             extra={
                 "tag": "satsdice_coinflip",
-                "ln_address": ln_address,
-                "game_id": game_id,
+                "ln_address": data.ln_address,
+                "game_id": data.game_id,
             },
         )
     except Exception as e:

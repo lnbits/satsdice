@@ -71,6 +71,7 @@
           </div>
           <div class="col">
           <q-select
+          v-if="coinflip.coinflipEnabled" 
           filled
           dense
           emit-value
@@ -469,7 +470,8 @@
           enabled: this.coinflip.coinflipEnabled,
           haircut: this.coinflip.coinflipHaircut,
           max_players: this.coinflip.coinflipMaxPlayers,
-          max_bet: this.coinflip.coinflipMaxBet
+          max_bet: this.coinflip.coinflipMaxBet,
+          wallet_id: this.coinflip.wallet_id
         }
         LNbits.api
           .request('POST', '/satsdice/api/v1/coinflip/settings', 
@@ -497,6 +499,7 @@
             this.coinflip.coinflipHaircut = response.data.haircut
             this.coinflip.coinflipMaxPlayers = response.data.max_players
             this.coinflip.coinflipMaxBet = response.data.max_bet
+            this.coinflip.wallet_id = response.data.wallet_id
           })
           .catch(err => {
             LNbits.utils.notifyApiError(err)

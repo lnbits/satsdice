@@ -157,11 +157,16 @@ class CoinflipSettings(BaseModel):
     haircut: float = Query(0)
 
 class Coinflip(BaseModel):
-    id: str = Query(None)
-    name: str = Query(None)
-    number_of_players: int = Query(0)
-    buy_in: int = Query(0)
-    players: str = Query(None)
+    id: Optional[str] = None
+    name: Optional[str] = None
+    number_of_players: int = 0
+    buy_in: int = 0
+    players: Optional[str] = None
+    page_id: Optional[str] = None
+    completed: bool = False
+    created_at: float = 0.0
+
+class JoinCoinflipGame(BaseModel):
+    game_id: str = Query(None)
     page_id: str = Query(None)
-    completed: bool = Query(False)
-    created_at: float = Query(0)
+    ln_address: str = Query(None)
