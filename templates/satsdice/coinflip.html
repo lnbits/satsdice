@@ -200,7 +200,9 @@
                 url.pathname = `/api/v1/ws/${this.qr.payment_hash}`
                 const ws = new WebSocket(url)
                 ws.addEventListener('message', async ({ data }) => {
-                    if (data == "paid") {
+                    console.log(data)
+                    dataArr = data.split(",");
+                    if (dataArr[0] == "paid") {
                         this.$q.notify({
                             type: 'positive',
                             message: 'Invoice Paid! Waiting for more players...'
@@ -208,22 +210,39 @@
                         this.qr.show = false
                         ws.close()
                     }
-                    if (data == "won") {
+                    if (dataArr[0] == "won") {
+                        this.qr.show = false
+                        this.coinflipWinner = dataArr[1]
+                        this.gameComplete = true
                         this.$q.notify({
                             type: 'positive',
                             message: 'You flipping won the coinflip!!! Winner! Winner! Chicken Dinner!'
                         })
                         this.confettiFireworks()
-                        this.qr.show = false
                         ws.close()
                     }
-                    if (data == "refund") {
+                    if (dataArr[0] == "lost") {
+                        this.$q.notify({
+                            type: 'negative',
+                            message: 'You lost! Good luck next time!'
+                        })
+                        this.qr.show = false
+                        this.coinflipWinner = dataArr[1]
+                        this.gameComplete = true
+                        ws.close()
+                    }
+                    if (dataArr[0] == "refund") {
                         this.$q.notify({
                             type: 'negative',
                             message: 'Game was already full :( Refunding your sats (minus registration fee)'
                         })
                         this.qr.show = false
+                        this.coinflipWinner = dataArr[1]
+                        this.gameComplete = true
                         ws.close()
+                    }
+                    else {
+                        console.log(data)
                     }
                 })
             },

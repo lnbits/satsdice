@@ -43,7 +43,10 @@ async def on_invoice_paid(payment: Payment) -> None:
         if (payment.amount / 1000) != coinflip.buy_in:
             return
         # If the game is full set as completed and refund the player.
-        if len(coinflip.players) > coinflip_settings.max_players:
+        coinflipPlayers = coinflip.players.split(",")
+        logger.debug(coinflipPlayers)
+        if len(coinflipPlayers) + 1 > coinflip.number_of_players:
+            logger.debug("poo")
             coinflip.completed = True
             await update_coinflip(coinflip)
 
@@ -64,18 +67,22 @@ async def on_invoice_paid(payment: Payment) -> None:
             return
 
         # Add the player to the game.
-        coinflip.players = f"{coinflip.players},{ln_address}"
+        if coinflip.players == "":
+            coinflip.players = ln_address
+        else:
+            coinflip.players = f"{coinflip.players},{ln_address}"
         await update_coinflip(coinflip)
 
         # if player is the last one, pay their ln_address the winnings and set as completed.
-        if len(coinflip.players) == coinflip_settings.max_players:
-            winner = random.choice(coinflip.players)
+        coinflipPlayers = coinflip.players.split(",")
+        if len(coinflipPlayers) == coinflip.number_of_players:
             coinflip.completed = True
+            winner = random.choice(coinflipPlayers)
             coinflip.players = winner
             await update_coinflip(coinflip)
 
             # Calculate the total amount of winnings
-            total_amount = coinflip.buy_in * len(coinflip.players)
+            total_amount = coinflip.buy_in * len(coinflipPlayers)
             # Calculate the haircut amount
             haircut_amount = total_amount * (coinflip_settings.haircut / 100)
             # Calculate the winnings minus haircut
@@ -89,7 +96,10 @@ async def on_invoice_paid(payment: Payment) -> None:
                 max_sat=max_sat,
                 description="You flipping won the coinflip!",
             )
-            await websocket_updater(payment.payment_hash, "won")
+            if winner == ln_address:
+                await websocket_updater(payment.payment_hash, f"won,{winner}")
+            if winner != ln_address:
+                await websocket_updater(payment.payment_hash, f"won,{winner}")
             return
         await websocket_updater(payment.payment_hash, "paid")
         return
