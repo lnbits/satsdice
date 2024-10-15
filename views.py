@@ -151,20 +151,33 @@ async def img(link_id):
         },
     )
 
-@satsdice_generic_router.get("/coinflip/{coinflip_page_id}", response_class=HTMLResponse)
-async def display_coinflip(request: Request, coinflip_page_id: str):
-    coinflip = await get_coinflip_settings_page(coinflip_page_id)
-    if not coinflip:
+
+@satsdice_generic_router.get(
+    "/coinflip/{coinflip_page_id}", response_class=HTMLResponse
+)
+async def display_coinflip(request: Request, coinflip_page_id: str, game: str = None):
+    coinflip_settings = await get_coinflip_settings_page(coinflip_page_id)
+    if not coinflip_settings:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Coinflip game does not exist."
         )
+    winner = None
+    if game:
+        coinflip = await get_coinflip(game)
+        if not coinflip:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="Coinflip game does not exist."
+            )
+        if coinflip.completed:
+            winner = coinflip.players.replace(",", "")
     return satsdice_renderer().TemplateResponse(
         "satsdice/coinflip.html",
         {
             "request": request,
-            "coinflipHaircut": coinflip.haircut,
-            "coinflipMaxPlayers": coinflip.max_players,
-            "coinflipMaxBet": coinflip.max_bet,
-            "coinflipPageId": coinflip.page_id,
+            "coinflipHaircut": coinflip_settings.haircut,
+            "coinflipMaxPlayers": coinflip_settings.max_players,
+            "coinflipMaxBet": coinflip_settings.max_bet,
+            "coinflipPageId": coinflip_settings.page_id,
+            "coinflipWinner": winner,
         },
     )

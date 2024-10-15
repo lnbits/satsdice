@@ -57,6 +57,7 @@
     <q-card-section v-if="gameComplete" class="q-pa-none" v-else>
         <center>
             <h2 class=" q-my-none">Game Complete</h2>
+            <h5 class=" q-my-none">{{coinflipWinner}} won!</h5>
             <q-icon color="teal" name="check" size="30em"></q-icon>
         </center>
     </q-card-section>
@@ -69,9 +70,11 @@
         </q-responsive>
         <div class="text-h6 q-mb-md">Pay this invoice to join the game</div>
         <div class="row q-mt-lg">
+            {%raw%}
             <q-btn outline color="grey" @click="copyText(qr.payment_request, 'Invoice URL copied to clipboard!')">Copy
                 URL</q-btn>
             <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
+            {%endraw%}
         </div>
     </q-card>
 </q-dialog>
@@ -97,6 +100,7 @@
                 coinflipMaxPlayers: parseInt('{{ coinflipMaxPlayers }}'),
                 coinflipMaxBet: parseInt('{{ coinflipMaxBet }}'),
                 coinflipPageId: '{{ coinflipPageId }}',
+                coinflipWinner: '{{ coinflipWinner }}',
                 lnaddress: "",
                 qr: {
                     show: false,
@@ -158,6 +162,7 @@
                         console.log(response.data)
                         this.activeGame = true
                         window.history.replaceState(null, null, "?game=" + response.data)
+                        this.gameId = response.data
                     }
                 } catch (error) {
                     LNbits.utils.notifyApiError(error)
@@ -184,12 +189,52 @@
                         self.qr.payment_hash = response.data.payment_hash
                         self.qr.show = true
                         this.websocket()
-
-                        // this.coinflip = data
                     }
                 } catch (error) {
                     LNbits.utils.notifyApiError(error)
                 }
+            },
+            websocket: function () {
+                const url = new URL(window.location)
+                url.protocol = url.protocol === 'https:' ? 'wss' : 'ws'
+                url.pathname = `/api/v1/ws/${this.qr.payment_hash}`
+                const ws = new WebSocket(url)
+                ws.addEventListener('message', async ({ data }) => {
+                    if (data == "paid") {
+                        this.$q.notify({
+                            type: 'positive',
+                            message: 'Invoice Paid! Waiting for more players...'
+                        })
+                        this.qr.show = false
+                        ws.close()
+                    }
+                    if (data == "won") {
+                        this.$q.notify({
+                            type: 'positive',
+                            message: 'You flipping won the coinflip!!! Winner! Winner! Chicken Dinner!'
+                        })
+                        this.confettiFireworks()
+                        this.qr.show = false
+                        ws.close()
+                    }
+                    if (data == "refund") {
+                        this.$q.notify({
+                            type: 'negative',
+                            message: 'Game was already full :( Refunding your sats (minus registration fee)'
+                        })
+                        this.qr.show = false
+                        ws.close()
+                    }
+                })
+            },
+            copyText: function (text = window.location.href, message = 'Copied coinflip link!') {
+                var notify = this.$q.notify
+                Quasar.utils.copyToClipboard(text).then(function () {
+                    notify({
+                        message: message,
+                        position: 'bottom'
+                    })
+                })
             },
             confettiFireworks() {
                 var duration = 3 * 1000
@@ -220,40 +265,6 @@
                         origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
                     })
                 }, 250)
-            },
-            websocket: function () {
-                const url = new URL(window.location)
-                url.protocol = url.protocol === 'https:' ? 'wss' : 'ws'
-                url.pathname = `/api/v1/ws/${qr.payment_hash}`
-                const ws = new WebSocket(url)
-                ws.addEventListener('message', async ({ data }) => {
-                    if (data == "paid") {
-                        this.$q.notify({
-                            type: 'positive',
-                            message: 'Invoice Paid!'
-                        })
-                        this.qr.show = false
-                        ws.close()
-                    }
-                    if (data == "won") {
-                        this.$q.notify({
-                            type: 'positive',
-                            message: 'You flipping won!!! Winner! Winner! Chicken Dinner!'
-                        })
-                        this.confettiFireworks()
-                        this.qr.show = false
-                        ws.close()
-                    }
-                })
-            },
-            copyText: function (text, message) {
-                var notify = this.$q.notify
-                Quasar.utils.copyToClipboard(window.location.href).then(function () {
-                    notify({
-                        message: 'Copied coinflip link!',
-                        position: 'bottom'
-                    })
-                })
             },
         },
         async mounted() {

@@ -77,6 +77,7 @@ async def m004_make_hash_check(db):
 ### Coinflip ###
 ################
 
+
 async def m005_add_coinflip_settings(db):
     """
     Creates a hash check table.
@@ -94,6 +95,7 @@ async def m005_add_coinflip_settings(db):
         );
         """
     )
+
 
 async def m006_add_coinflip(db):
     """

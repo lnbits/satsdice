@@ -19,7 +19,7 @@ from .crud import (
     update_satsdice_pay,
     create_coinflip,
     get_coinflip,
-    get_coinflip_settings, 
+    get_coinflip_settings,
     set_coinflip_settings,
     get_latest_coinflip,
     get_coinflip_settings_page,
@@ -164,10 +164,11 @@ async def api_get_coinflip_settings(wallet: WalletTypeInfo = Depends(get_key_typ
         )
     return await get_coinflip_settings(user.id)
 
+
 @satsdice_api_router.post("/api/v1/coinflip/settings", status_code=HTTPStatus.CREATED)
 async def api_set_coinflip_settings(
-    settings: CoinflipSettings, 
-    wallet: WalletTypeInfo = Depends(require_admin_key)):
+    settings: CoinflipSettings, wallet: WalletTypeInfo = Depends(require_admin_key)
+):
 
     user = await get_user(wallet.wallet.user)
     if not user:
@@ -178,27 +179,26 @@ async def api_set_coinflip_settings(
     settings = await set_coinflip_settings(settings)
     return settings
 
+
 @satsdice_api_router.post("/api/v1/coinflip/", status_code=HTTPStatus.OK)
-async def api_create_coinflip(
-    data: Coinflip):
-    latest_coinflip = await get_latest_coinflip(data.page_id)    
-    if latest_coinflip: 
+async def api_create_coinflip(data: Coinflip):
+    latest_coinflip = await get_latest_coinflip(data.page_id)
+    if latest_coinflip:
         if latest_coinflip.created_at + 120 > datetime.now().timestamp():
             raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST, detail="You can only create a coinflip every 2 mins"
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail="You can only create a coinflip every 2 mins",
             )
     coinflip = await create_coinflip(data)
     return coinflip.id
 
+
 @satsdice_api_router.post("/api/v1/coinflip/join/{game_id}", status_code=HTTPStatus.OK)
-async def api_create_coinflip(
-    data: JoinCoinflipGame):
+async def api_create_coinflip(data: JoinCoinflipGame):
     coinflip_settings = await get_coinflip_settings_page(data.page_id)
     coinflip_game = await get_coinflip(data.game_id)
     if not coinflip_game:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="No game found"
-        )
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="No game found")
     if not coinflip_settings:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail="Coinflip settings missing"
@@ -225,6 +225,7 @@ async def api_create_coinflip(
     except Exception as e:
         raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e))
     return {"payment_hash": payment_hash, "payment_request": payment_request}
+
 
 @satsdice_api_router.get("/api/v1/coinflip/{coinflip_id}", status_code=HTTPStatus.OK)
 async def api_get_coinflip(coinflip_id: str):
