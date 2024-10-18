@@ -14,6 +14,8 @@ from starlette.responses import HTMLResponse
 
 from .crud import (
     create_satsdice_withdraw,
+    get_coinflip,
+    get_coinflip_settings_page,
     get_satsdice_pay,
     get_satsdice_payment,
     get_satsdice_withdraw,
@@ -146,5 +148,36 @@ async def img(link_id):
             "Cache-Control": "no-cache, no-store, must-revalidate",
             "Pragma": "no-cache",
             "Expires": "0",
+        },
+    )
+
+
+@satsdice_generic_router.get(
+    "/coinflip/{coinflip_page_id}", response_class=HTMLResponse
+)
+async def display_coinflip(request: Request, coinflip_page_id: str, game: str = ""):
+    coinflip_settings = await get_coinflip_settings_page(coinflip_page_id)
+    if not coinflip_settings:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Coinflip game does not exist."
+        )
+    winner = None
+    if game:
+        coinflip = await get_coinflip(game)
+        if not coinflip:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="Coinflip game does not exist."
+            )
+        if coinflip.completed:
+            winner = coinflip.players
+    return satsdice_renderer().TemplateResponse(
+        "satsdice/coinflip.html",
+        {
+            "request": request,
+            "coinflipHaircut": coinflip_settings.haircut,
+            "coinflipMaxPlayers": coinflip_settings.max_players,
+            "coinflipMaxBet": coinflip_settings.max_bet,
+            "coinflipPageId": coinflip_settings.page_id,
+            "coinflipWinner": winner,
         },
     )

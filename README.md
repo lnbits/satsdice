@@ -2,6 +2,14 @@
 
 <small>For more about LNBits extension check [this tutorial](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions)</small>
 
-## Create staic LNURL powered satsdices
+## Satsdice
 
-Gambling is dangerous, flip responsibly
+- Gambling in a qrcode
+- Pay sats with x chance of winning x
+
+## Coinflips
+
+- Create coinflips, x users pay to join and winner takes all (minus registration fee)
+
+Gambling is dangerous, gamble responsibly.
+https://www.gambleaware.org
