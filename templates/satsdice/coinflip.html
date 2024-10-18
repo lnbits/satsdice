@@ -81,7 +81,9 @@
   <q-card-section v-if="gameComplete" class="q-pa-none" v-else>
     <center>
       <h2 class="q-my-none">Game Complete</h2>
-      <h5 class="q-my-none">{{coinflipWinnerComputed}} won!</h5>
+      {%raw%}
+      <h5 class="q-my-none">{{coinflipWinner}} won!</h5>
+      {%endraw%}
       <q-icon color="teal" name="check" size="30em"></q-icon>
     </center>
   </q-card-section>
@@ -139,11 +141,6 @@
           payment_request: '',
           payment_hash: ''
         }
-      }
-    },
-    computed: {
-      coinflipWinnerComputed() {
-        return this.coinflipWinner
       }
     },
     methods: {
