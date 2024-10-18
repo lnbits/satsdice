@@ -5,16 +5,14 @@ from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
 
 from .models import (
+    Coinflip,
+    CoinflipSettings,
     CreateSatsDiceLink,
     CreateSatsDicePayment,
     CreateSatsDiceWithdraw,
     SatsdiceLink,
     SatsdicePayment,
     SatsdiceWithdraw,
-    CreateCoinflip,
-    Coinflip,
-    CoinflipParticipant,
-    CoinflipSettings,
 )
 
 db = Database("ext_satsdice")
@@ -285,62 +283,112 @@ async def get_withdraw_hash_checkw(the_hash: str, lnurl_id: str):
         return {"lnurl": True, "hash": True}
 
 
-
 ################
 ### Coinflip ###
 ################
 
+# Coinflip Settings
+
+
 async def set_coinflip_settings(settings: CoinflipSettings) -> None:
-    if not settings.id:
-        settings_id = urlsafe_short_hash()
+    fetch_settings = await get_coinflip_settings(settings.id)
+    if fetch_settings:
+        await db.execute(
+            """
+            UPDATE satsdice.settings
+            SET max_players = ?, max_bet = ?, enabled = ?, haircut = ?, wallet_id = ?
+            WHERE id = ?
+            """,
+            (
+                settings.max_players,
+                settings.max_bet,
+                settings.enabled,
+                settings.haircut,
+                settings.wallet_id,
+                settings.id,
+            ),
+        )
     else:
-        settings_id = settings.id
-    await db.execute(
-        """
-        INSERT INTO satsdice.settings (id, user_id, max_players, max_bet, enabled, haircut)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (settings_id, settings.user_id, settings.max_players, settings.max_bet, settings.enabled, settings.haircut)
+        page_id = urlsafe_short_hash()
+        await db.execute(
+            """
+            INSERT INTO satsdice.settings (
+                id, page_id, max_players, max_bet, enabled, haircut, wallet_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                settings.id,
+                page_id,
+                settings.max_players,
+                settings.max_bet,
+                settings.enabled,
+                settings.haircut,
+                settings.wallet_id,
+            ),
+        )
+    return await get_coinflip_settings(settings.id)
+
+
+async def get_coinflip_settings(
+    coinflip_settings_id: str,
+) -> Optional[CoinflipSettings]:
+    row = await db.fetchone(
+        "SELECT * FROM satsdice.settings WHERE id = ?", (coinflip_settings_id,)
     )
-    return await get_coinflip_settings(settings_id)
+    if row:
+        return CoinflipSettings(**row) if row else None
+    else:
+        return None
 
 
-async def create_coinflip(data: CreateCoinflip) -> Coinflip:
+async def get_coinflip_settings_page(
+    coinflip_page_id: str,
+) -> Optional[CoinflipSettings]:
+    row = await db.fetchone(
+        "SELECT * FROM satsdice.settings WHERE page_id = ?", (coinflip_page_id,)
+    )
+    if row:
+        return CoinflipSettings(**row) if row else None
+    else:
+        return None
+
+
+# Coinflips
+
+
+async def create_coinflip(data: Coinflip) -> Coinflip:
     coinflip_id = urlsafe_short_hash()
     await db.execute(
         """
         INSERT INTO satsdice.coinflip (
-            id, name, number_of_players, buy_in, created_at
+            id, name, number_of_players, buy_in, players, page_id, completed
         )
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (
             coinflip_id,
             data.name,
             data.number_of_players,
             data.buy_in,
-            int(datetime.now().timestamp()),
+            "",
+            data.page_id,
+            False,
         ),
     )
     return await get_coinflip(coinflip_id)
 
-async def add_coinflip_participant(coinflip_id: str, lnaddress: str) -> CoinflipParticipant:
-    participant_id = urlsafe_short_hash()
+
+async def update_coinflip(coinflip: Coinflip) -> Coinflip:
     await db.execute(
         """
-        INSERT INTO satsdice.coinflip_participants (
-            id, coinflip_id, lnaddress, paid
-        )
-        VALUES (?, ?, ?, ?)
+        UPDATE satsdice.coinflip
+        SET players = ?, completed = ?
+        WHERE id = ?
         """,
-        (
-            participant_id,
-            coinflip_id,
-            lnaddress,
-            False,
-        ),
+        (coinflip.players, coinflip.completed, coinflip.id),
     )
-    return await get_coinflip_participant(participant_id)
+    return await get_coinflip(coinflip.id)
 
 
 async def get_coinflip(coinflip_id: str) -> Optional[Coinflip]:
@@ -349,27 +397,10 @@ async def get_coinflip(coinflip_id: str) -> Optional[Coinflip]:
     )
     return Coinflip(**row) if row else None
 
-async def get_coinflip_participant(participant_id: str) -> Optional[CoinflipParticipant]:
+
+async def get_latest_coinflip(page_id: str) -> Optional[Coinflip]:
     row = await db.fetchone(
-        "SELECT * FROM satsdice.coinflip_participants WHERE id = ?", (participant_id,)
+        "SELECT * FROM satsdice.coinflip WHERE page_id = ? ORDER BY created_at DESC",
+        (page_id,),
     )
-    return CoinflipParticipant(**row) if row else None
-
-async def mark_participant_paid(participant_id: str) -> None:
-    await db.execute(
-        "UPDATE satsdice.coinflip_participants SET paid = ? WHERE id = ?",
-        (True, participant_id),
-    )
-
-async def get_coinflip_participants(coinflip_id: str) -> List[CoinflipParticipant]:
-    rows = await db.fetchall(
-        "SELECT * FROM satsdice.coinflip_participants WHERE coinflip_id = ?", (coinflip_id,)
-    )
-    return [CoinflipParticipant(**row) for row in rows]
-
-async def get_coinflip_settings(coinflip_settings_id: str) -> CoinflipSettings:
-    row = await db.fetchone("SELECT * FROM satsdice.settings WHERE id = ?", (coinflip_settings_id,))
-    if row:
-        return CoinflipSettings(**row['value'])
-    return CoinflipSettings(enabled=False, haircut=0.0)
-
+    return Coinflip(**row) if row else None
