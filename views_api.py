@@ -8,7 +8,7 @@ from lnbits.core.services import create_invoice
 from lnbits.decorators import get_key_type, require_admin_key
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 from starlette.exceptions import HTTPException
-
+from .helpers import get_pr
 from .crud import (
     create_coinflip,
     create_satsdice_pay,
@@ -29,6 +29,7 @@ from .models import (
     CreateSatsDiceLink,
     JoinCoinflipGame,
 )
+from loguru import logger
 
 satsdice_api_router = APIRouter()
 
@@ -208,6 +209,12 @@ async def api_join_coinflip(data: JoinCoinflipGame):
     if not coinflip_settings.enabled:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail="This game is disabled"
+        )
+    pay_req = await get_pr(data.ln_address, coinflip_game.buy_in)
+    logger.debug(pay_req)
+    if not pay_req:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="lnaddress check failed"
         )
     try:
         payment_hash, payment_request = await create_invoice(

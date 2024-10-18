@@ -7,13 +7,13 @@ from lnbits.core.services import websocket_updater
 from lnbits.core.views.api import api_lnurlscan, pay_invoice
 from lnbits.helpers import get_current_extension_name
 from lnbits.tasks import register_invoice_listener
+from .helpers import get_pr
 
 from .crud import (
     get_coinflip,
     get_coinflip_settings_page,
     update_coinflip,
 )
-
 
 async def wait_for_paid_invoices():
     invoice_queue = asyncio.Queue()
@@ -84,26 +84,15 @@ async def on_invoice_paid(payment: Payment) -> None:
             if not pr:
                 return
             if winner == ln_address:
+                await websocket_updater(payment.payment_hash, f"won,{winner}")
                 await pay_invoice(
                     wallet_id=coinflip_settings.wallet_id,
                     payment_request=pr,
                     max_sat=max_sat,
                     description="You flipping won the coinflip!",
                 )
-                await websocket_updater(payment.payment_hash, f"won,{winner}")
             if winner != ln_address:
                 await websocket_updater(payment.payment_hash, f"lost,{winner}")
             return
         await websocket_updater(payment.payment_hash, "paid")
         return
-
-
-async def get_pr(ln_address, amount):
-    data = await api_lnurlscan(ln_address)
-    if data.get("status") == "ERROR":
-        return
-    async with httpx.AsyncClient() as client:
-        response = await client.get(url=f"{data['callback']}?amount={amount* 1000}")
-        if response.status_code != 200:
-            return
-        return response.json()["pr"]
