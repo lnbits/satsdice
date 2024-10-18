@@ -7,8 +7,9 @@ from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
 from lnbits.decorators import get_key_type, require_admin_key
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
+from loguru import logger
 from starlette.exceptions import HTTPException
-from .helpers import get_pr
+
 from .crud import (
     create_coinflip,
     create_satsdice_pay,
@@ -23,13 +24,13 @@ from .crud import (
     set_coinflip_settings,
     update_satsdice_pay,
 )
+from .helpers import get_pr
 from .models import (
     Coinflip,
     CoinflipSettings,
     CreateSatsDiceLink,
     JoinCoinflipGame,
 )
-from loguru import logger
 
 satsdice_api_router = APIRouter()
 

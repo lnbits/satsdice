@@ -1,19 +1,19 @@
 import asyncio
 import random
 
-import httpx
 from lnbits.core.models import Payment
 from lnbits.core.services import websocket_updater
-from lnbits.core.views.api import api_lnurlscan, pay_invoice
+from lnbits.core.views.api import pay_invoice
 from lnbits.helpers import get_current_extension_name
 from lnbits.tasks import register_invoice_listener
-from .helpers import get_pr
 
 from .crud import (
     get_coinflip,
     get_coinflip_settings_page,
     update_coinflip,
 )
+from .helpers import get_pr
+
 
 async def wait_for_paid_invoices():
     invoice_queue = asyncio.Queue()
