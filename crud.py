@@ -5,14 +5,14 @@ from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
 
 from .models import (
+    Coinflip,
+    CoinflipSettings,
     CreateSatsDiceLink,
     CreateSatsDicePayment,
     CreateSatsDiceWithdraw,
     SatsdiceLink,
     SatsdicePayment,
     SatsdiceWithdraw,
-    Coinflip,
-    CoinflipSettings,
 )
 
 db = Database("ext_satsdice")
@@ -312,7 +312,9 @@ async def set_coinflip_settings(settings: CoinflipSettings) -> None:
         page_id = urlsafe_short_hash()
         await db.execute(
             """
-            INSERT INTO satsdice.settings (id, page_id, max_players, max_bet, enabled, haircut, wallet_id)
+            INSERT INTO satsdice.settings (
+                id, page_id, max_players, max_bet, enabled, haircut, wallet_id
+            )
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (

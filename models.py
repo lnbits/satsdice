@@ -1,13 +1,12 @@
 import json
 from sqlite3 import Row
-from typing import Dict, Optional, List
-from datetime import datetime
+from typing import Dict, Optional
+
 from fastapi import Query, Request
 from lnurl import Lnurl
 from lnurl import encode as lnurl_encode
 from lnurl.types import LnurlPayMetadata
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class SatsdiceLink(BaseModel):

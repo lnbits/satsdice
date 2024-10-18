@@ -1,12 +1,14 @@
 import asyncio
+
 from fastapi import APIRouter
+from lnbits.tasks import create_permanent_unique_task
+from loguru import logger
 
 from .crud import db
+from .tasks import wait_for_paid_invoices
 from .views import satsdice_generic_router
 from .views_api import satsdice_api_router
 from .views_lnurl import satsdice_lnurl_router
-from lnbits.tasks import create_permanent_unique_task
-from loguru import logger
 
 satsdice_ext: APIRouter = APIRouter(prefix="/satsdice", tags=["satsdice"])
 satsdice_ext.include_router(satsdice_generic_router)
@@ -19,8 +21,6 @@ satsdice_static_files = [
         "name": "satsdice_static",
     }
 ]
-
-from .tasks import wait_for_paid_invoices
 
 scheduled_tasks: list[asyncio.Task] = []
 

@@ -1,28 +1,27 @@
+from datetime import datetime
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Query, Request
 from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
+from lnbits.core.services import create_invoice
 from lnbits.decorators import get_key_type, require_admin_key
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 from starlette.exceptions import HTTPException
-from loguru import logger
-from datetime import datetime
-from lnbits.core.services import create_invoice
 
 from .crud import (
+    create_coinflip,
     create_satsdice_pay,
     delete_satsdice_pay,
+    get_coinflip,
+    get_coinflip_settings,
+    get_coinflip_settings_page,
+    get_latest_coinflip,
     get_satsdice_pay,
     get_satsdice_pays,
     get_withdraw_hash_checkw,
-    update_satsdice_pay,
-    create_coinflip,
-    get_coinflip,
-    get_coinflip_settings,
     set_coinflip_settings,
-    get_latest_coinflip,
-    get_coinflip_settings_page,
+    update_satsdice_pay,
 )
 from .models import (
     Coinflip,
@@ -169,11 +168,10 @@ async def api_get_coinflip_settings(wallet: WalletTypeInfo = Depends(get_key_typ
 async def api_set_coinflip_settings(
     settings: CoinflipSettings, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
-
     user = await get_user(wallet.wallet.user)
     if not user:
         raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
+            status_code=HTTPStatus.FORBIDDEN, detail="unable to change settings"
         )
     settings.id = user.id
     settings = await set_coinflip_settings(settings)
@@ -194,7 +192,7 @@ async def api_create_coinflip(data: Coinflip):
 
 
 @satsdice_api_router.post("/api/v1/coinflip/join/{game_id}", status_code=HTTPStatus.OK)
-async def api_create_coinflip(data: JoinCoinflipGame):
+async def api_join_coinflip(data: JoinCoinflipGame):
     coinflip_settings = await get_coinflip_settings_page(data.page_id)
     coinflip_game = await get_coinflip(data.game_id)
     if not coinflip_game:
@@ -223,7 +221,9 @@ async def api_create_coinflip(data: JoinCoinflipGame):
             },
         )
     except Exception as e:
-        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e)
+        ) from e
     return {"payment_hash": payment_hash, "payment_request": payment_request}
 
 
