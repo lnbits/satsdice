@@ -1,5 +1,7 @@
 {% extends "base.html" %} {% from "macros.jinja" import window_vars with context
-%} {% block page %}
+%} {% block scripts %} {{ window_vars(user) }}
+<script src="{{ static_url_for('tpos/static', path='js/index.js') }}"></script>
+{% endblock %} {% block page %}
 <div class="row q-col-gutter-md">
   <div class="col-12 col-md-7 q-gutter-y-md">
     <q-card>
@@ -20,11 +22,10 @@
         <q-table
           dense
           flat
-          :data="payLinks"
+          :rows="payLinks"
           row-key="id"
-          :pagination.sync="payLinksTable.pagination"
+          v-model.pagination="payLinksTable.pagination"
         >
-          {% raw %}
           <template v-slot:header="props">
             <q-tr :props="props">
               <q-th style="width: 10%"></q-th>
@@ -50,12 +51,12 @@
                 ></q-btn>
               </q-td>
 
-              <q-td auto-width>{{ props.row.title }}</q-td>
-              <q-td auto-width>{{ props.row.min_bet }}</q-td>
-              <q-td auto-width>{{ props.row.max_bet }}</q-td>
-              <q-td auto-width>*{{ props.row.multiplier }}</q-td>
-              <q-td auto-width>{{ props.row.haircut }}</q-td>
-              <q-td auto-width>{{ props.row.chance }}%</q-td>
+              <q-td auto-width v-text="props.row.title"></q-td>
+              <q-td auto-width v-text="props.row.min_bet"></q-td>
+              <q-td auto-width v-text="props.row.max_bet"></q-td>
+              <q-td auto-width v-text="'*' + props.row.multiplier"></q-td>
+              <q-td auto-width v-text="props.row.haircut"></q-td>
+              <q-td auto-width v-text="props.row.change + '+'"></q-td>
               <q-td auto-width>
                 <q-btn
                   flat
@@ -76,7 +77,6 @@
               </q-td>
             </q-tr>
           </template>
-          {% endraw %}
         </q-table>
       </q-card-section>
     </q-card>
@@ -181,7 +181,6 @@
           label="Wallet *"
         >
         </q-select>
-        {% raw %}
         <q-input
           filled
           dense
@@ -222,8 +221,8 @@
         ></q-input>
         <center>
           <q-badge color="secondary" class="q-mb-lg">
-            Multipler: x{{ multiValue }}, Chance of winning: {{ chanceValueCalc
-            | percent }}
+              Multipler: x<span v-text="multiValue"></span>,
+              Chance of winning: <span v-text="chanceValueCalc | percent"></span>
           </q-badge>
 
           <q-slider
@@ -323,28 +322,26 @@
 
   <q-dialog v-model="qrCodeDialog.show" position="top">
     <q-card v-if="qrCodeDialog.data" class="q-pa-lg lnbits__dialog-card">
-      <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
-        <qrcode
-          :value="'lightning:' + qrCodeDialog.data.lnurl"
-          :options="{width: 800}"
-          class="rounded-borders"
-        >
-        </qrcode>
-      </q-responsive>
+      <lnbits-qrcode
+        :value="'lightning:' + qrCodeDialog.data.lnurl"
+        class="rounded-borders"
+      ></lnbits-qrcode>
       <p style="word-break: break-all">
-        <strong>ID:</strong> {{ qrCodeDialog.data.id }}<br />
-        <strong>Amount:</strong> {{ qrCodeDialog.data.amount }}<br />
+      <strong>ID:</strong> <span v-text="qrCodeDialog.data.id"></span><br />
+        <strong>Amount:</strong> <span v-text="qrCodeDialog.data.amount"></span><br />
         <span v-if="qrCodeDialog.data.currency"
-          ><strong>{{ qrCodeDialog.data.currency }} price:</strong> {{
-          fiatRates[qrCodeDialog.data.currency] ?
-          fiatRates[qrCodeDialog.data.currency] + ' sat' : 'Loading...' }}<br
-        /></span>
-        <strong>Accepts comments:</strong> {{ qrCodeDialog.data.comments }}<br />
-        <strong>Dispatches webhook to:</strong> {{ qrCodeDialog.data.webhook
-        }}<br />
-        <strong>On success:</strong> {{ qrCodeDialog.data.success }}<br />
+          ><strong v-text="qrCodeDialog.data.currency + ' price:'"></strong>
+          <span
+            v-if="fiatRates[qrCodeDialog.data.currency]"
+            v-text="fiatRates[qrCodeDialog.data.currency + ' sat'"
+          ></span>
+          <span v-else>Loading...</span>
+          <br/>
+        </span>
+        <strong>Accepts comments:</strong> <span v-text="qrCodeDialog.data.comments"></span><br />
+        <strong>Dispatches webhook to:</strong> <span v-text="qrCodeDialog.data.webhook"></span><br />
+        <strong>On success:</strong> <span v-text="qrCodeDialog.data.success"></span><br />
       </p>
-      {% endraw %}
       <div class="row q-mt-lg q-gutter-sm">
         <q-btn
           outline
@@ -384,7 +381,6 @@
     </q-card>
   </q-dialog>
 </div>
-
 {% endblock %} {% block scripts %} {{ window_vars(user) }}
 
 <script>

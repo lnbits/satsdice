@@ -67,7 +67,7 @@ async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(No
             detail=f"Amount {amount_received} is greater than maximum {max_bet}.",
         )
 
-    payment_hash, payment_request = await create_invoice(
+    payment = await create_invoice(
         wallet_id=link.wallet,
         amount=int(amount_received / 1000),
         memo="Satsdice bet",
@@ -75,17 +75,17 @@ async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(No
         extra={"tag": "satsdice", "link": link.id, "comment": "comment"},
     )
 
-    success_action = link.success_action(payment_hash=payment_hash, req=req)
+    success_action = link.success_action(payment_hash=payment.payment_hash, req=req)
 
     data = CreateSatsDicePayment(
         satsdice_pay=link.id,
         value=int(amount_received / 1000),
-        payment_hash=payment_hash,
+        payment_hash=payment.payment_hash,
     )
 
     await create_satsdice_payment(data)
     pay_response: dict = {
-        "pr": payment_request,
+        "pr": payment.bolt11,
         "successAction": success_action,
         "routes": [],
     }

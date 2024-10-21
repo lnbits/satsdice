@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
-from lnbits.decorators import get_key_type, require_admin_key
+from lnbits.decorators import require_admin_key, require_invoice_key
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
 from loguru import logger
 from starlette.exceptions import HTTPException
@@ -36,7 +36,7 @@ satsdice_api_router = APIRouter()
 @satsdice_api_router.get("/api/v1/links")
 async def api_links(
     request: Request,
-    wallet: WalletTypeInfo = Depends(get_key_type),
+    wallet: WalletTypeInfo = Depends(require_invoice_key),
     all_wallets: bool = Query(False),
 ):
     wallet_ids = [wallet.wallet.id]
@@ -62,7 +62,7 @@ async def api_links(
 
 @satsdice_api_router.get("/api/v1/links/{link_id}")
 async def api_link_retrieve(
-    link_id: str, wallet: WalletTypeInfo = Depends(get_key_type)
+    link_id: str, wallet: WalletTypeInfo = Depends(require_invoice_key)
 ):
     link = await get_satsdice_pay(link_id)
 
@@ -137,11 +137,10 @@ async def api_link_delete(
 
     await delete_satsdice_pay(link_id)
 
-    return "", HTTPStatus.NO_CONTENT
-
 
 @satsdice_api_router.get(
-    "/api/v1/withdraws/{the_hash}/{lnurl_id}", dependencies=[Depends(get_key_type)]
+    "/api/v1/withdraws/{the_hash}/{lnurl_id}",
+    dependencies=[Depends(require_invoice_key)],
 )
 async def api_withdraw_hash_retrieve(
     the_hash: str,
@@ -157,8 +156,10 @@ async def api_withdraw_hash_retrieve(
 
 
 @satsdice_api_router.get("/api/v1/coinflip/settings", status_code=HTTPStatus.OK)
-async def api_get_coinflip_settings(wallet: WalletTypeInfo = Depends(get_key_type)):
-    user = await get_user(wallet.wallet.user)
+async def api_get_coinflip_settings(
+    key_info: WalletTypeInfo = Depends(require_invoice_key),
+):
+    user = await get_user(key_info.wallet.user)
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
