@@ -274,16 +274,6 @@
   >
     <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
       <q-form @submit="createGame" class="q-gutter-md">
-        <q-select
-          filled
-          dense
-          emit-value
-          v-model="formDialogCoinflip.data.wallet"
-          :options="g.user.walletOptions"
-          label="Wallet *"
-        >
-        </q-select>
-
         <q-input
           filled
           dense
@@ -319,7 +309,6 @@
             unelevated
             color="primary"
             :disable="
-              formDialogCoinflip.data.wallet == null ||
               formDialogCoinflip.data.title == null || formDialogCoinflip.data.number_of_players > coinflip.coinflipMaxPlayers || formDialogCoinflip.data.buy_in > coinflip.coinflipMaxBet"
             type="submit"
             >Create coinflip</q-btn
@@ -721,7 +710,7 @@
       async createGame() {
         self = this
         const wallet = _.findWhere(this.g.user.wallets, {
-          id: this.formDialogCoinflip.data.wallet
+          id: this.coinflip.wallet_id
         })
         const data = {
           name: self.formDialogCoinflip.data.title,
