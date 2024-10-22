@@ -1,4 +1,3 @@
-from datetime import datetime
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -17,7 +16,6 @@ from .crud import (
     get_coinflip,
     get_coinflip_settings,
     get_coinflip_settings_page,
-    get_latest_coinflip,
     get_satsdice_pay,
     get_satsdice_pays,
     get_withdraw_hash_checkw,
@@ -181,14 +179,25 @@ async def api_set_coinflip_settings(
 
 
 @satsdice_api_router.post("/api/v1/coinflip/", status_code=HTTPStatus.OK)
-async def api_create_coinflip(data: Coinflip):
-    latest_coinflip = await get_latest_coinflip(data.page_id)
-    if latest_coinflip:
-        if latest_coinflip.created_at + 120 > datetime.now().timestamp():
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST,
-                detail="You can only create a coinflip every 2 mins",
-            )
+async def api_create_coinflip(
+    data: Coinflip, wallet: WalletTypeInfo = Depends(get_key_type)
+):
+    coinflip_settings = await get_coinflip_settings(wallet.wallet.user)
+    if not coinflip_settings:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Couldnt load settings"
+        )
+    if coinflip_settings.max_bet < data.buy_in:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Buy in to high")
+    if coinflip_settings.max_players < data.number_of_players:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Number of plaers is too high"
+        )
+    logger.debug(coinflip_settings.page_id)
+    logger.debug(data.page_id)
+    if coinflip_settings.page_id != data.page_id:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Wrong user")
+    logger.debug("coinflip_settings")
     coinflip = await create_coinflip(data)
     return coinflip.id
 

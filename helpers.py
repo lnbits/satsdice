@@ -1,4 +1,3 @@
-
 import httpx
 from lnbits.core.views.api import api_lnurlscan
 

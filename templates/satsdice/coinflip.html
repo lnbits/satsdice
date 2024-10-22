@@ -55,29 +55,7 @@
       >
     </q-form>
   </q-card-section>
-  <q-card-section class="q-pa-none" v-if="!activeGame && !gameComplete">
-    <h3 class="q-my-none">Create Coinflip Game</h3>
-    <q-form @submit="createGame" class="q-gutter-md">
-      <q-input
-        label="Name"
-        type="text"
-        v-model="coinflip.name"
-        required
-      ></q-input>
-      <q-input
-        :label="'Number of players (max ' + coinflipMaxPlayers + ')'"
-        type="number"
-        v-model="coinflip.number_of_players"
-        required
-      ></q-input>
-      <q-input
-        :label="'Buy in (max ' + coinflipMaxBet + 'sats)'"
-        type="number"
-        v-model="coinflip.buy_in"
-      ></q-input>
-      <q-btn outline type="submit" class="q-mt-lg">Create Coinflip</q-btn>
-    </q-form>
-  </q-card-section>
+
   <q-card-section v-if="gameComplete" class="q-pa-none" v-else>
     <center>
       <h2 class="q-my-none">Game Complete</h2>
@@ -101,12 +79,7 @@
     <div class="text-h6 q-mb-md">Pay this invoice to join the game</div>
     <div class="row q-mt-lg">
       {%raw%}
-      <q-btn
-        outline
-        color="grey"
-        @click="copyText(qr.payment_request, 'Invoice URL copied to clipboard!')"
-        >Copy URL</q-btn
-      >
+      <q-btn outline color="grey" @click="copyInvoice">Copy URL</q-btn>
       <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
       {%endraw%}
     </div>
@@ -133,6 +106,7 @@
         coinflipHaircut: parseInt('{{ coinflipHaircut }}'),
         coinflipMaxPlayers: parseInt('{{ coinflipMaxPlayers }}'),
         coinflipMaxBet: parseInt('{{ coinflipMaxBet }}'),
+        coinflipGameId: '{{ coinflipGameId }}',
         coinflipPageId: '{{ coinflipPageId }}',
         coinflipWinner: '{{ coinflipWinner }}',
         lnaddress: '',
@@ -159,47 +133,6 @@
         if (response.data) {
           self.coinflip = response.data
           self.activeGame = true
-        }
-      },
-      async createGame() {
-        self = this
-        const data = {
-          name: self.coinflip.name,
-          number_of_players: parseInt(self.coinflip.number_of_players),
-          buy_in: parseInt(self.coinflip.buy_in),
-          page_id: self.coinflipPageId
-        }
-        console.log(data)
-        if (data.buy_in > self.coinflipMaxBet) {
-          this.$q.notify({
-            type: 'negative',
-            message: `Max bet is ${this.coinflipMaxBet}`
-          })
-          return
-        }
-        if (this.coinflip.number_of_players > this.coinflipMaxPlayers) {
-          this.$q.notify({
-            type: 'negative',
-            message: `Max players is ${this.coinflipMaxPlayers}`
-          })
-          return
-        }
-        try {
-          const response = await LNbits.api.request(
-            'POST',
-            '/satsdice/api/v1/coinflip/',
-            '',
-            data
-          )
-          console.log(response.data)
-          if (response.data) {
-            console.log(response.data)
-            this.activeGame = true
-            window.history.replaceState(null, null, '?game=' + response.data)
-            this.gameId = response.data
-          }
-        } catch (error) {
-          LNbits.utils.notifyApiError(error)
         }
       },
       async joinGame() {
@@ -282,14 +215,20 @@
           }
         })
       },
-      copyText: function (
-        text = window.location.href,
-        message = 'Copied coinflip link!'
-      ) {
+      copyText: function () {
         var notify = this.$q.notify
-        Quasar.utils.copyToClipboard(text).then(function () {
+        Quasar.utils.copyToClipboard(window.location.href).then(function () {
           notify({
-            message: message,
+            message: 'Copied coinflip link to clipboard!',
+            position: 'bottom'
+          })
+        })
+      },
+      copyInvoice: function () {
+        var notify = this.$q.notify
+        Quasar.utils.copyToClipboard(this.qr.payment_request).then(function () {
+          notify({
+            message: 'Invoice URL copied to clipboard!',
             position: 'bottom'
           })
         })
@@ -326,7 +265,7 @@
       }
     },
     async mounted() {
-      this.gameId = this.getQueryParam('game')
+      this.gameId = this.coinflipGameId
       if (this.gameId) {
         await this.getGame()
         if (this.coinflip.players.length > this.coinflipMaxPlayers) {

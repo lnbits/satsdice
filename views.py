@@ -9,6 +9,7 @@ from lnbits.core.crud import get_standalone_payment
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
 from lnbits.helpers import template_renderer
+from loguru import logger
 from starlette.exceptions import HTTPException
 from starlette.responses import HTMLResponse
 
@@ -153,15 +154,18 @@ async def img(link_id):
 
 
 @satsdice_generic_router.get(
-    "/coinflip/{coinflip_page_id}", response_class=HTMLResponse
+    "/coinflip/{coinflip_page_id}/{game}", response_class=HTMLResponse
 )
-async def display_coinflip(request: Request, coinflip_page_id: str, game: str = ""):
+async def display_coinflip(request: Request, coinflip_page_id: str, game: str):
+    logger.debug(coinflip_page_id)
     coinflip_settings = await get_coinflip_settings_page(coinflip_page_id)
+    logger.debug(coinflip_settings)
     if not coinflip_settings:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Coinflip game does not exist."
         )
     winner = None
+    logger.debug("wah")
     if game:
         coinflip = await get_coinflip(game)
         if not coinflip:
@@ -178,6 +182,7 @@ async def display_coinflip(request: Request, coinflip_page_id: str, game: str = 
             "coinflipMaxPlayers": coinflip_settings.max_players,
             "coinflipMaxBet": coinflip_settings.max_bet,
             "coinflipPageId": coinflip_settings.page_id,
+            "coinflipGameId": game,
             "coinflipWinner": winner,
         },
     )

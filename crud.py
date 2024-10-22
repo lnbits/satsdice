@@ -3,6 +3,7 @@ from typing import List, Optional, Union
 
 from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
+from loguru import logger
 
 from .models import (
     Coinflip,
@@ -348,6 +349,7 @@ async def get_coinflip_settings_page(
     row = await db.fetchone(
         "SELECT * FROM satsdice.settings WHERE page_id = ?", (coinflip_page_id,)
     )
+    logger.debug(coinflip_page_id)
     if row:
         return CoinflipSettings(**row) if row else None
     else:
