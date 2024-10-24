@@ -227,10 +227,7 @@ window.app = Vue.createApp({
               _.findWhere(this.g.user.wallets, {id: link.wallet}).adminkey
             )
             .then(response => {
-              this.payLinks = _.reject(
-                this.payLinks,
-                obj => obj.id === linkId
-              )
+              this.payLinks = _.reject(this.payLinks, obj => obj.id === linkId)
             })
             .catch(err => {
               LNbits.utils.notifyApiError(err)

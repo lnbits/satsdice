@@ -1,14 +1,11 @@
-import json
 import math
 from http import HTTPStatus
 
 from fastapi import APIRouter, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse
 from lnbits.core.services import (
     create_invoice,
     pay_invoice,
 )
-from loguru import logger
 
 from .crud import (
     create_satsdice_payment,
@@ -42,7 +39,6 @@ async def api_lnurlp_response(req: Request, link_id: str):
 
 @satsdice_lnurl_router.get(
     "/api/v1/lnurlp/cb/{link_id}",
-    response_class=HTMLResponse,
     name="satsdice.api_lnurlp_callback",
 )
 async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(None)):
@@ -84,12 +80,12 @@ async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(No
     )
 
     await create_satsdice_payment(data)
-    pay_response: dict = {
+
+    return {
         "pr": payment.bolt11,
         "successAction": success_action,
         "routes": [],
     }
-    return json.dumps(pay_response)
 
 
 @satsdice_lnurl_router.get(
@@ -138,20 +134,17 @@ async def api_lnurlw_callback(
 
     link.used = True
     await update_satsdice_withdraw(link)
+
     try:
         await pay_invoice(
             wallet_id=paylink.wallet,
             payment_request=pr,
             max_sat=link.value,
-            extra={"tag": "withdraw"},
         )
-        # If no exception was raised, it means payment was successful
-        return {"status": "OK"}
-    except HTTPException as e:
+    except Exception as exc:
         # If the payment failed, we need to reset the withdraw to unused
         link.used = False
         await update_satsdice_withdraw(link)
-        return {"status": "ERROR", "reason": str(e)}
-    except Exception as e:
-        logger.error("unexpected exception in satsdice withdraw", e)
-        return {"status": "ERROR", "reason": str(e)}
+        return {"status": "ERROR", "reason": str(exc)}
+
+    return {"status": "OK"}

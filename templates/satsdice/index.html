@@ -221,8 +221,8 @@
         ></q-input>
         <center>
           <q-badge color="secondary" class="q-mb-lg">
-              Multipler: x<span v-text="multiValue"></span>,
-              Chance of winning: <span v-text="chanceValueCalc | percent"></span>
+            Multipler: x<span v-text="multiValue"></span>, Chance of winning:
+            <span v-text="chanceValueCalc | percent"></span>
           </q-badge>
 
           <q-slider
@@ -327,8 +327,9 @@
         class="rounded-borders"
       ></lnbits-qrcode>
       <p style="word-break: break-all">
-      <strong>ID:</strong> <span v-text="qrCodeDialog.data.id"></span><br />
-        <strong>Amount:</strong> <span v-text="qrCodeDialog.data.amount"></span><br />
+        <strong>ID:</strong> <span v-text="qrCodeDialog.data.id"></span><br />
+        <strong>Amount:</strong> <span v-text="qrCodeDialog.data.amount"></span
+        ><br />
         <span v-if="qrCodeDialog.data.currency"
           ><strong v-text="qrCodeDialog.data.currency + ' price:'"></strong>
           <span
@@ -336,11 +337,14 @@
             v-text="fiatRates[qrCodeDialog.data.currency + ' sat'"
           ></span>
           <span v-else>Loading...</span>
-          <br/>
+          <br />
         </span>
-        <strong>Accepts comments:</strong> <span v-text="qrCodeDialog.data.comments"></span><br />
-        <strong>Dispatches webhook to:</strong> <span v-text="qrCodeDialog.data.webhook"></span><br />
-        <strong>On success:</strong> <span v-text="qrCodeDialog.data.success"></span><br />
+        <strong>Accepts comments:</strong>
+        <span v-text="qrCodeDialog.data.comments"></span><br />
+        <strong>Dispatches webhook to:</strong>
+        <span v-text="qrCodeDialog.data.webhook"></span><br />
+        <strong>On success:</strong>
+        <span v-text="qrCodeDialog.data.success"></span><br />
       </p>
       <div class="row q-mt-lg q-gutter-sm">
         <q-btn

@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from sqlite3 import Row
 from typing import Dict, Optional
 
@@ -147,25 +148,31 @@ class CreateSatsDiceWithdraws(BaseModel):
 ################
 
 
-class CoinflipSettings(BaseModel):
-    id: Optional[str] = None
-    page_id: str = ""
-    wallet_id: str = ""
+class CreateCoinflipSettings(BaseModel):
     max_players: int = 5
     max_bet: int = 100
     enabled: bool = False
-    haircut: float = 0
+    haircut: float = 0.0
+
+
+class CoinflipSettings(BaseModel):
+    id: str
+    wallet_id: str
+    max_players: int
+    max_bet: int
+    enabled: bool
+    haircut: float
 
 
 class Coinflip(BaseModel):
     id: Optional[str] = None
+    settings_id: Optional[str] = None
     name: str
     number_of_players: int = 0
     buy_in: int = 0
     players: str = ""
-    page_id: str = ""
     completed: bool = False
-    created_at: float = 0.0
+    created_at: datetime = datetime.now(timezone.utc)
 
 
 class JoinCoinflipGame(BaseModel):

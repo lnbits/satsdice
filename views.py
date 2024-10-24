@@ -32,7 +32,7 @@ def satsdice_renderer():
 @satsdice_generic_router.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return satsdice_renderer().TemplateResponse(
-        "satsdice/index.html", {"request": request, "user": user.dict()}
+        "satsdice/index.html", {"request": request, "user": user.json()}
     )
 
 
@@ -174,7 +174,7 @@ async def display_coinflip(request: Request, coinflip_page_id: str, game: str):
             "coinflipHaircut": coinflip_settings.haircut,
             "coinflipMaxPlayers": coinflip_settings.max_players,
             "coinflipMaxBet": coinflip_settings.max_bet,
-            "coinflipPageId": coinflip_settings.page_id,
+            "coinflipPageId": coinflip_settings.id,
             "coinflipGameId": game,
             "coinflipWinner": winner,
         },
