@@ -140,3 +140,35 @@ class CreateSatsDiceWithdraws(BaseModel):
     uses: int = Query(0)
     wait_time: str = Query(None)
     is_unique: bool = Query(False)
+
+
+################
+### Coinflip ###
+################
+
+
+class CoinflipSettings(BaseModel):
+    id: Optional[str] = None
+    page_id: str = ""
+    wallet_id: str = ""
+    max_players: int = 5
+    max_bet: int = 100
+    enabled: bool = False
+    haircut: float = 0
+
+
+class Coinflip(BaseModel):
+    id: Optional[str] = None
+    name: str
+    number_of_players: int = 0
+    buy_in: int = 0
+    players: str = ""
+    page_id: str = ""
+    completed: bool = False
+    created_at: float = 0.0
+
+
+class JoinCoinflipGame(BaseModel):
+    game_id: str = Query(None)
+    page_id: str = Query(None)
+    ln_address: str = Query(None)

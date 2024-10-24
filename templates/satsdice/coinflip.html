@@ -1,0 +1,278 @@
+{% extends "public.html" %} {% block page %}
+
+<q-card class="fixed-center q-pa-xl" style="width: 600px">
+  <q-card-section class="q-pa-none" v-if="activeGame && !gameComplete"
+    >{% raw %}
+    <center>
+      <h3 class="q-my-none q-mb-xl">{{ coinflip.name }}</h3>
+    </center>
+    <div class="row">
+      <div class="col">
+        <center>
+          <q-badge outline size="xl" color="secondary">
+            <div class="text-subtitle1">
+              No. of Players: {{coinflip.number_of_players}}
+            </div>
+          </q-badge>
+        </center>
+      </div>
+      <div class="col">
+        <center>
+          <q-badge outline size="xl" color="secondary">
+            <div class="text-subtitle1">Buy In: {{coinflip.buy_in}} sats</div>
+          </q-badge>
+        </center>
+      </div>
+      <div class="col">
+        <center>
+          <q-badge outline size="xl" color="secondary">
+            <div class="text-subtitle1">
+              Registration fee: {{coinflipHaircut}} %
+            </div>
+          </q-badge>
+        </center>
+      </div>
+    </div>
+    {% endraw %}
+    <q-form @submit="joinGame" class="q-gutter-md">
+      <q-input
+        label="Your LNadress"
+        class="q-mt-lg"
+        type="text"
+        v-model="lnaddress"
+        required
+      ></q-input>
+      <q-btn outline class="q-mt-lg" type="submit">Join Coinflip</q-btn>
+      <q-btn
+        class="q-ml-lg q-mt-md"
+        unelevated
+        dense
+        size="col-md-5"
+        icon="link"
+        :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
+        @click="copyText"
+        ><q-tooltip>Copy coinflip link</q-tooltip></q-btn
+      >
+    </q-form>
+  </q-card-section>
+
+  <q-card-section v-if="gameComplete" class="q-pa-none" v-else>
+    <center>
+      <h2 class="q-my-none">Game Complete</h2>
+      {%raw%}
+      <h5 class="q-my-none">{{coinflipWinner}} won!</h5>
+      {%endraw%}
+      <q-icon color="teal" name="check" size="30em"></q-icon>
+    </center>
+  </q-card-section>
+</q-card>
+
+<q-dialog v-model="qr.show" position="top">
+  <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
+    <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
+      <lnbits-qrcode
+        :value="qr.payment_request"
+        :options="{width: 800}"
+        class="rounded-borders"
+      ></lnbits-qrcode>
+    </q-responsive>
+    <div class="text-h6 q-mb-md">Pay this invoice to join the game</div>
+    <div class="row q-mt-lg">
+      {%raw%}
+      <q-btn outline color="grey" @click="copyInvoice">Copy URL</q-btn>
+      <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
+      {%endraw%}
+    </div>
+  </q-card>
+</q-dialog>
+
+{% endblock %} {% block scripts %}
+<script>
+  Vue.component(VueQrcode.name, VueQrcode)
+
+  new Vue({
+    el: '#vue',
+    mixins: [windowMixin],
+    data() {
+      return {
+        activeGame: false,
+        gameComplete: false,
+        gameId: '',
+        coinflip: {
+          name: '',
+          number_of_players: 0,
+          buy_in: 0
+        },
+        coinflipHaircut: parseInt('{{ coinflipHaircut }}'),
+        coinflipMaxPlayers: parseInt('{{ coinflipMaxPlayers }}'),
+        coinflipMaxBet: parseInt('{{ coinflipMaxBet }}'),
+        coinflipGameId: '{{ coinflipGameId }}',
+        coinflipPageId: '{{ coinflipPageId }}',
+        coinflipWinner: '{{ coinflipWinner }}',
+        lnaddress: '',
+        qr: {
+          show: false,
+          payment_request: '',
+          payment_hash: ''
+        }
+      }
+    },
+    methods: {
+      getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search)
+        return urlParams.get(param)
+      },
+      async getGame() {
+        self = this
+        const response = await LNbits.api.request(
+          'GET',
+          `/satsdice/api/v1/coinflip/${this.gameId}`,
+          ''
+        )
+        console.log(response.data)
+        if (response.data) {
+          self.coinflip = response.data
+          self.activeGame = true
+        }
+      },
+      async joinGame() {
+        self = this
+        try {
+          const data = {
+            game_id: this.gameId,
+            page_id: this.coinflipPageId,
+            ln_address: this.lnaddress
+          }
+
+          const response = await LNbits.api.request(
+            'POST',
+            '/satsdice/api/v1/coinflip/join/' + this.coinflipPageId,
+            '',
+            data
+          )
+          if (response.data) {
+            console.log(response.data.payment_request)
+            self.qr.payment_request = response.data.payment_request
+            self.qr.payment_hash = response.data.payment_hash
+            self.qr.show = true
+            this.websocket()
+          }
+        } catch (error) {
+          LNbits.utils.notifyApiError(error)
+        }
+      },
+      websocket: function () {
+        const url = new URL(window.location)
+        url.protocol = url.protocol === 'https:' ? 'wss' : 'ws'
+        url.pathname = `/api/v1/ws/${this.qr.payment_hash}`
+        const ws = new WebSocket(url)
+        ws.addEventListener('message', async ({data}) => {
+          console.log(data)
+          dataArr = data.split(',')
+          if (dataArr[0] == 'paid') {
+            this.$q.notify({
+              type: 'positive',
+              message: 'Invoice Paid! Waiting for more players...'
+            })
+            this.qr.show = false
+            ws.close()
+          }
+          if (dataArr[0] == 'won') {
+            this.qr.show = false
+            this.coinflipWinner = dataArr[1]
+            this.gameComplete = true
+            this.$q.notify({
+              type: 'positive',
+              message:
+                'You flipping won the coinflip!!!\n' +
+                'Payment will be with you shortly'
+            })
+            this.confettiFireworks()
+            ws.close()
+          }
+          if (dataArr[0] == 'lost') {
+            this.$q.notify({
+              type: 'negative',
+              message: 'You lost! Good luck next time!'
+            })
+            this.qr.show = false
+            this.coinflipWinner = dataArr[1]
+            this.gameComplete = true
+            ws.close()
+          }
+          if (dataArr[0] == 'refund') {
+            this.$q.notify({
+              type: 'negative',
+              message:
+                'Game was already full :( Refunding your sats (minus registration fee)'
+            })
+            this.qr.show = false
+            this.coinflipWinner = dataArr[1]
+            this.gameComplete = true
+            ws.close()
+          } else {
+            console.log(data)
+          }
+        })
+      },
+      copyText: function () {
+        var notify = this.$q.notify
+        Quasar.utils.copyToClipboard(window.location.href).then(function () {
+          notify({
+            message: 'Copied coinflip link to clipboard!',
+            position: 'bottom'
+          })
+        })
+      },
+      copyInvoice: function () {
+        var notify = this.$q.notify
+        Quasar.utils.copyToClipboard(this.qr.payment_request).then(function () {
+          notify({
+            message: 'Invoice URL copied to clipboard!',
+            position: 'bottom'
+          })
+        })
+      },
+      confettiFireworks() {
+        var duration = 3 * 1000
+        var animationEnd = Date.now() + duration
+        var defaults = {startVelocity: 30, spread: 360, ticks: 60, zIndex: 0}
+
+        function randomInRange(min, max) {
+          return Math.random() * (max - min) + min
+        }
+
+        var interval = setInterval(function () {
+          var timeLeft = animationEnd - Date.now()
+
+          if (timeLeft <= 0) {
+            return clearInterval(interval)
+          }
+
+          var particleCount = 5 * (timeLeft / duration)
+          // since particles fall down, start a bit higher than random
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: {x: randomInRange(0.1, 0.3), y: Math.random() - 0.2}
+          })
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: {x: randomInRange(0.7, 0.9), y: Math.random() - 0.2}
+          })
+        }, 250)
+      }
+    },
+    async mounted() {
+      this.gameId = this.coinflipGameId
+      if (this.gameId) {
+        await this.getGame()
+        if (this.coinflip.players.length > this.coinflipMaxPlayers) {
+          this.gameComplete = true
+        }
+      }
+    }
+  })
+</script>
+{% endblock %}

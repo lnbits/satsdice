@@ -80,6 +80,75 @@
         </q-table>
       </q-card-section>
     </q-card>
+    <q-card>
+      <q-card-section>
+        <q-toggle
+          v-model="coinflip.coinflipEnabled"
+          label="Enable Coinflip Games"
+        ></q-toggle>
+        <div class="row">
+          <div class="col">
+            <q-input
+              v-if="coinflip.coinflipEnabled"
+              filled
+              dense
+              v-model.number="coinflip.coinflipHaircut"
+              type="number"
+              label="Haircut on coiflips (%)"
+            ></q-input>
+          </div>
+          <div class="col">
+            <q-input
+              class="q-ml-md"
+              v-if="coinflip.coinflipEnabled"
+              filled
+              dense
+              v-model.number="coinflip.coinflipMaxPlayers"
+              type="number"
+              label="Max players per game"
+            ></q-input>
+          </div>
+          <div class="col">
+            <q-input
+              class="q-ml-md"
+              v-if="coinflip.coinflipEnabled"
+              filled
+              dense
+              v-model.number="coinflip.coinflipMaxBet"
+              type="number"
+              label="Max Bet Size (sats)"
+            ></q-input>
+          </div>
+        </div>
+        <div class="row q-mt-lg">
+          <div class="col">
+            <q-select
+              v-if="coinflip.coinflipEnabled"
+              filled
+              dense
+              emit-value
+              v-model="coinflip.wallet_id"
+              :options="g.user.walletOptions"
+              label="Wallet *"
+            ></q-select>
+          </div>
+        </div>
+        <q-btn
+          class="q-mt-md"
+          v-if="coinflip.coinflipEnabled"
+          @click="saveCoinflipSettings"
+          color="primary"
+          >Save Settings</q-btn
+        >
+        <q-btn
+          class="q-mt-md"
+          v-if="coinflip.coinflipId"
+          @click="formDialogCoinflip.show = true"
+          color="primary"
+          >Create coinflip game</q-btn
+        >
+      </q-card-section>
+    </q-card>
   </div>
 
   <div class="col-12 col-md-5 q-gutter-y-md">
@@ -198,6 +267,60 @@
     </q-card>
   </q-dialog>
 
+  <q-dialog
+    v-model="formDialogCoinflip.show"
+    position="top"
+    @hide="closeFormDialog"
+  >
+    <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
+      <q-form @submit="createGame" class="q-gutter-md">
+        <q-input
+          filled
+          dense
+          v-model.trim="formDialogCoinflip.data.title"
+          type="text"
+          label="Title *"
+        ></q-input>
+
+        <div class="row">
+          <div class="col">
+            <q-input
+              class="q-pr-xs"
+              filled
+              dense
+              v-model.trim="formDialogCoinflip.data.number_of_players"
+              type="number"
+              :label="'Number of players (max ' + coinflip.coinflipMaxPlayers + ')'"
+            ></q-input>
+          </div>
+          <div class="col">
+            <q-input
+              class="q-pl-xs"
+              filled
+              dense
+              v-model.trim="formDialogCoinflip.data.buy_in"
+              type="number"
+              :label="'Buy in (max ' + coinflip.coinflipMaxBet + 'sats)'"
+            ></q-input>
+          </div>
+        </div>
+        <div>
+          <q-btn
+            unelevated
+            color="primary"
+            :disable="
+              formDialogCoinflip.data.title == null || formDialogCoinflip.data.number_of_players > coinflip.coinflipMaxPlayers || formDialogCoinflip.data.buy_in > coinflip.coinflipMaxBet"
+            type="submit"
+            >Create coinflip</q-btn
+          >
+          <q-btn v-close-popup flat color="grey" class="q-ml-auto"
+            >Cancel</q-btn
+          >
+        </div>
+      </q-form>
+    </q-card>
+  </q-dialog>
+
   <q-dialog v-model="qrCodeDialog.show" position="top">
     <q-card v-if="qrCodeDialog.data" class="q-pa-lg lnbits__dialog-card">
       <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
@@ -205,7 +328,8 @@
           :value="'lightning:' + qrCodeDialog.data.lnurl"
           :options="{width: 800}"
           class="rounded-borders"
-        ></qrcode>
+        >
+        </qrcode>
       </q-responsive>
       <p style="word-break: break-all">
         <strong>ID:</strong> {{ qrCodeDialog.data.id }}<br />
@@ -314,9 +438,26 @@
             comment_chars: 0
           }
         },
+        formDialogCoinflip: {
+          show: false,
+          fixedAmount: true,
+          data: {
+            number_of_players: 2,
+            buy_in: 1000,
+            wallet: null
+          }
+        },
         qrCodeDialog: {
           show: false,
           data: null
+        },
+        coinflip: {
+          coinflipId: '',
+          coinflipEnabled: false,
+          coinflipHaircut: 0,
+          coinflipMaxPlayers: 2,
+          coinflipMaxBet: 1000,
+          wallet_id: null
         }
       }
     },
@@ -518,12 +659,112 @@
           .catch(err => {
             LNbits.utils.notifyApiError(err)
           })
+      },
+      saveCoinflipSettings() {
+        const settings = {
+          id: this.g.user.wallets[0].id,
+          enabled: this.coinflip.coinflipEnabled,
+          haircut: this.coinflip.coinflipHaircut,
+          max_players: this.coinflip.coinflipMaxPlayers,
+          max_bet: this.coinflip.coinflipMaxBet,
+          wallet_id: this.coinflip.wallet_id
+        }
+        LNbits.api
+          .request(
+            'POST',
+            '/satsdice/api/v1/coinflip/settings',
+            this.g.user.wallets[0].adminkey,
+            settings
+          )
+          .then(response => {
+            this.coinflip.coinflipId = response.data.page_id
+            this.$q.notify({
+              type: 'positive',
+              message: 'Coinflip settings saved!'
+            })
+          })
+          .catch(err => {
+            LNbits.utils.notifyApiError(err)
+          })
+      },
+      getCoinflipSettings() {
+        LNbits.api
+          .request(
+            'GET',
+            '/satsdice/api/v1/coinflip/settings',
+            this.g.user.wallets[0].adminkey
+          )
+          .then(response => {
+            console.log(response.data)
+            this.coinflip.coinflipId = response.data.page_id
+            this.coinflip.coinflipEnabled = response.data.enabled
+            this.coinflip.coinflipHaircut = response.data.haircut
+            this.coinflip.coinflipMaxPlayers = response.data.max_players
+            this.coinflip.coinflipMaxBet = response.data.max_bet
+            this.coinflip.wallet_id = response.data.wallet_id
+          })
+          .catch(err => {
+            LNbits.utils.notifyApiError(err)
+          })
+      },
+      async createGame() {
+        self = this
+        const wallet = _.findWhere(this.g.user.wallets, {
+          id: this.coinflip.wallet_id
+        })
+        const data = {
+          name: self.formDialogCoinflip.data.title,
+          number_of_players: parseInt(
+            self.formDialogCoinflip.data.number_of_players
+          ),
+          buy_in: parseInt(self.formDialogCoinflip.data.buy_in),
+          page_id: self.coinflip.coinflipId
+        }
+        console.log(data)
+        if (data.buy_in > self.coinflipMaxBet) {
+          this.$q.notify({
+            type: 'negative',
+            message: `Max bet is ${this.coinflipMaxBet}`
+          })
+          return
+        }
+        if (this.coinflip.number_of_players > this.coinflipMaxPlayers) {
+          this.$q.notify({
+            type: 'negative',
+            message: `Max players is ${this.coinflipMaxPlayers}`
+          })
+          return
+        }
+        console.log('wah')
+        console.log(self.formDialogCoinflip.data.wallet)
+        console.log('wah')
+        try {
+          const response = await LNbits.api.request(
+            'POST',
+            '/satsdice/api/v1/coinflip/',
+            wallet.inkey,
+            data
+          )
+          console.log(response.data)
+          if (response.data) {
+            console.log(response.data)
+            this.activeGame = true
+
+            const url = new URL(window.location)
+            url.pathname = `/satsdice/coinflip/${this.coinflip.coinflipId}/${response.data}`
+            window.open(url)
+          }
+        } catch (error) {
+          LNbits.utils.notifyApiError(error)
+        }
       }
     },
     created() {
       if (this.g.user.wallets.length) {
         var getPayLinks = this.getPayLinks
         getPayLinks()
+        var getCoinflipSettings = this.getCoinflipSettings
+        getCoinflipSettings()
         // this.checker = setInterval(() => {
         //   getPayLinks()
         // }, 20000)
