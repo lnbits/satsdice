@@ -5,13 +5,11 @@
       <q-card-section class="q-pa-none">
         <div class="text-center">
           <a class="text-secondary" href="lightning:{{ lnurl }}">
-            <q-responsive :ratio="1" class="q-mx-md">
-              <qrcode
-                :value="'lightning:{{ lnurl }}'"
-                :options="{width: 800}"
-                class="rounded-borders"
-              ></qrcode>
-            </q-responsive>
+            <lnbits-qrcode
+              :value="'lightning:{{ lnurl }}'"
+              :options="{width: 800}"
+              class="rounded-borders"
+            ></lnbits-qrcode>
           </a>
         </div>
         <div class="row q-mt-lg">
@@ -42,12 +40,10 @@
 </div>
 {% endblock %} {% block scripts %}
 <script>
-  Vue.component(VueQrcode.name, VueQrcode)
-
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
     mixins: [windowMixin],
-    data: function () {
+    data() {
       return {
         here: location.protocol + '//' + location.host,
         chance: parseFloat('{{chance}}') + '%'

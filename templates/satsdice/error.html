@@ -34,20 +34,14 @@ context %}{% block page %}
 </div>
 {% endblock %} {% block scripts %}{{ window_vars(user) }}
 <script>
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
     mixins: [windowMixin],
-    data: function () {
+    data() {
       return {
         satsdice_lost: '{{lost}}',
         satsdice_paid: '{{paid}}'
       }
-    },
-    methods: {
-      getUrl() {}
-    },
-    created() {
-      console.log('play_location')
     }
   })
 </script>

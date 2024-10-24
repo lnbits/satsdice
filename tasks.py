@@ -2,14 +2,12 @@ import asyncio
 import random
 
 from lnbits.core.models import Payment
-from lnbits.core.services import websocket_updater
-from lnbits.core.views.api import pay_invoice
-from lnbits.helpers import get_current_extension_name
+from lnbits.core.services import pay_invoice, websocket_updater
 from lnbits.tasks import register_invoice_listener
 
 from .crud import (
     get_coinflip,
-    get_coinflip_settings_page,
+    get_coinflip_settings,
     update_coinflip,
 )
 from .helpers import get_pr
@@ -17,7 +15,7 @@ from .helpers import get_pr
 
 async def wait_for_paid_invoices():
     invoice_queue = asyncio.Queue()
-    register_invoice_listener(invoice_queue, get_current_extension_name())
+    register_invoice_listener(invoice_queue, "ext_satsdice")
 
     while True:
         payment = await invoice_queue.get()
@@ -30,9 +28,9 @@ async def on_invoice_paid(payment: Payment) -> None:
         game_id = payment.extra["game_id"]
         # fetch details
         coinflip = await get_coinflip(game_id)
-        if not coinflip:
+        if not coinflip or not coinflip.settings_id:
             return
-        coinflip_settings = await get_coinflip_settings_page(coinflip.page_id)
+        coinflip_settings = await get_coinflip_settings(coinflip.settings_id)
         if not coinflip_settings:
             return
         # Check they are not trying to scam the system.
@@ -94,5 +92,5 @@ async def on_invoice_paid(payment: Payment) -> None:
             if winner != ln_address:
                 await websocket_updater(payment.payment_hash, f"lost,{winner}")
             return
+
         await websocket_updater(payment.payment_hash, "paid")
-        return

@@ -86,7 +86,6 @@ async def m005_add_coinflip_settings(db):
         """
         CREATE TABLE satsdice.settings (
             id TEXT PRIMARY KEY,
-            page_id TEXT NOT NULL,
             wallet_id TEXT NOT NULL,
             haircut INTEGER NOT NULL,
             max_players INTEGER NOT NULL,
@@ -102,18 +101,16 @@ async def m006_add_coinflip(db):
     Creates a hash check table.
     """
     await db.execute(
-        """
+        f"""
         CREATE TABLE satsdice.coinflip (
             id TEXT PRIMARY KEY,
+            settings_id TEXT NOT NULL,
             name TEXT NOT NULL,
             number_of_players INTEGER NOT NULL,
             buy_in INTEGER NOT NULL,
             players TEXT NOT NULL,
-            page_id TEXT NOT NULL,
             completed BOOLEAN,
-            created_at TIMESTAMP NOT NULL DEFAULT """
-        + db.timestamp_now
-        + """
+            created_at TIMESTAMP NOT NULL DEFAULT {db.timestamp_now}
         );
         """
     )
