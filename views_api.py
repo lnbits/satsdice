@@ -16,7 +16,7 @@ from .crud import (
     delete_satsdice_pay,
     get_coinflip,
     get_coinflip_settings,
-    get_coinflip_settings_page,
+    get_coinflip_settings_wallet,
     get_satsdice_pay,
     get_satsdice_pays,
     get_withdraw_hash_checkw,
@@ -221,11 +221,11 @@ async def api_update_coinflip_settings(
     return _settings
 
 
-@satsdice_api_router.post("/api/v1/coinflip/", status_code=HTTPStatus.OK)
+@satsdice_api_router.post("/api/v1/coinflip", status_code=HTTPStatus.OK)
 async def api_create_coinflip(
     data: Coinflip, key_info: WalletTypeInfo = Depends(require_invoice_key)
 ):
-    coinflip_settings = await get_coinflip_settings(key_info.wallet.user)
+    coinflip_settings = await get_coinflip_settings_wallet(key_info.wallet.id)
     if not coinflip_settings:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail="Couldnt load settings"
@@ -245,7 +245,7 @@ async def api_create_coinflip(
 
 @satsdice_api_router.post("/api/v1/coinflip/join/{game_id}", status_code=HTTPStatus.OK)
 async def api_join_coinflip(data: JoinCoinflipGame):
-    coinflip_settings = await get_coinflip_settings_page(data.page_id)
+    coinflip_settings = await get_coinflip_settings(data.settings_id)
     coinflip_game = await get_coinflip(data.game_id)
     if not coinflip_game:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="No game found")

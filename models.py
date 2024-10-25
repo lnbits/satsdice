@@ -168,5 +168,5 @@ class Coinflip(BaseModel):
 
 class JoinCoinflipGame(BaseModel):
     game_id: str = Query(None)
-    page_id: str = Query(None)
+    settings_id: str = Query(None)
     ln_address: str = Query(None)

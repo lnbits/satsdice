@@ -201,12 +201,10 @@ async def get_coinflip_settings(
     )
 
 
-async def get_coinflip_settings_page(
-    coinflip_page_id: str,
-) -> Optional[CoinflipSettings]:
+async def get_coinflip_settings_wallet(wallet_id: str) -> Optional[CoinflipSettings]:
     return await db.fetchone(
-        "SELECT * FROM satsdice.settings WHERE page_id = :id",
-        {"id": coinflip_page_id},
+        "SELECT * FROM satsdice.settings WHERE wallet_id = :id",
+        {"id": wallet_id},
         CoinflipSettings,
     )
 

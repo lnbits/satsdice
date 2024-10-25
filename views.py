@@ -14,7 +14,7 @@ from loguru import logger
 from .crud import (
     create_satsdice_withdraw,
     get_coinflip,
-    get_coinflip_settings_page,
+    get_coinflip_settings,
     get_satsdice_pay,
     get_satsdice_payment,
     get_satsdice_withdraw,
@@ -146,10 +146,10 @@ async def img(link_id):
 
 
 @satsdice_generic_router.get(
-    "/coinflip/{coinflip_page_id}/{game}", response_class=HTMLResponse
+    "/coinflip/{coinflip_settings_id}/{game}", response_class=HTMLResponse
 )
-async def display_coinflip(request: Request, coinflip_page_id: str, game: str):
-    coinflip_settings = await get_coinflip_settings_page(coinflip_page_id)
+async def display_coinflip(request: Request, coinflip_settings_id: str, game: str):
+    coinflip_settings = await get_coinflip_settings(coinflip_settings_id)
     logger.debug(coinflip_settings)
     if not coinflip_settings:
         raise HTTPException(

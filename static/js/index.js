@@ -293,7 +293,7 @@ window.app = Vue.createApp({
           this.g.user.wallets[0].adminkey
         )
         .then(response => {
-          this.coinflip.coinflipId = response.data.page_id
+          this.coinflip.coinflipId = response.data.id
           this.coinflip.coinflipEnabled = response.data.enabled
           this.coinflip.coinflipHaircut = response.data.haircut
           this.coinflip.coinflipMaxPlayers = response.data.max_players
@@ -333,7 +333,7 @@ window.app = Vue.createApp({
       try {
         const response = await LNbits.api.request(
           'POST',
-          '/satsdice/api/v1/coinflip/',
+          '/satsdice/api/v1/coinflip',
           wallet.inkey,
           data
         )
