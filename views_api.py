@@ -89,7 +89,14 @@ async def api_create_satsdice_link(
     if data.min_bet > data.max_bet:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
 
-    link = await create_satsdice_pay(wallet_id=wallet.wallet.id, data=data)
+    if data.wallet and data.wallet != wallet.wallet.id:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN,
+            detail="Come on, seriously, this isn't your satsdice!",
+        )
+
+    data.wallet = data.wallet or wallet.wallet.id
+    link = await create_satsdice_pay(data=data)
     return {**link.dict(), **{"lnurl": link.lnurl}}
 
 
@@ -160,13 +167,19 @@ async def api_withdraw_hash_retrieve(
 @satsdice_api_router.get("/api/v1/coinflip/settings", status_code=HTTPStatus.OK)
 async def api_get_coinflip_settings(
     key_info: WalletTypeInfo = Depends(require_invoice_key),
-):
+) -> CoinflipSettings:
     user = await get_user(key_info.wallet.user)
     if not user:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="unable to chnage settings"
         )
-    return await get_coinflip_settings(user.id)
+    settings = await get_coinflip_settings(user.id)
+    if not settings:
+        settings = await create_coinflip_settings(
+            key_info.wallet.id,
+            CreateCoinflipSettings(),
+        )
+    return settings
 
 
 @satsdice_api_router.post("/api/v1/coinflip/settings", status_code=HTTPStatus.CREATED)

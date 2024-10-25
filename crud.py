@@ -19,11 +19,9 @@ from .models import (
 db = Database("ext_satsdice")
 
 
-async def create_satsdice_pay(wallet_id: str, data: CreateSatsDiceLink) -> SatsdiceLink:
+async def create_satsdice_pay(data: CreateSatsDiceLink) -> SatsdiceLink:
     satsdice = SatsdiceLink(
         id=urlsafe_short_hash(),
-        wallet=wallet_id,
-        open_time=int(datetime.now().timestamp()),
         **data.dict(),
     )
     await db.insert("satsdice.satsdice_pay", satsdice)
@@ -62,7 +60,7 @@ async def delete_satsdice_pay(link_id: str) -> None:
 
 async def create_satsdice_payment(data: CreateSatsDicePayment) -> SatsdicePayment:
     payment = SatsdicePayment(**data.dict())
-    await db.update("satsdice.satsdice_payment", payment)
+    await db.insert("satsdice.satsdice_payment", payment)
     return payment
 
 

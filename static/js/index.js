@@ -7,10 +7,7 @@ const locationPath = [
 
 const mapPayLink = obj => {
   obj._data = _.clone(obj)
-  obj.date = Quasar.date.formatDate(
-    new Date(obj.time * 1000),
-    'YYYY-MM-DD HH:mm'
-  )
+  obj.date = Quasar.date.formatDate(new Date(obj.time), 'YYYY-MM-DD HH:mm')
   obj.amount = new Intl.NumberFormat(LOCALE).format(obj.amount)
   obj.print_url = [locationPath, 'print/', obj.id].join('')
   obj.pay_url = [locationPath, obj.id].join('')
@@ -44,9 +41,26 @@ window.app = Vue.createApp({
           comment_chars: 0
         }
       },
+      formDialogCoinflip: {
+        show: false,
+        fixedAmount: true,
+        data: {
+          number_of_players: 2,
+          buy_in: 1000,
+          wallet: null
+        }
+      },
       qrCodeDialog: {
         show: false,
         data: null
+      },
+      coinflip: {
+        coinflipId: '',
+        coinflipEnabled: false,
+        coinflipHaircut: 0,
+        coinflipMaxPlayers: 2,
+        coinflipMaxBet: 1000,
+        wallet_id: null
       }
     }
   },
@@ -77,7 +91,6 @@ window.app = Vue.createApp({
           this.g.user.wallets[0].inkey
         )
         .then(response => {
-          console.log(response.data)
           this.payLinks = response.data.map(mapPayLink)
         })
         .catch(err => {
@@ -90,7 +103,6 @@ window.app = Vue.createApp({
     },
     openQrCodeDialog(linkId) {
       const link = _.findWhere(this.payLinks, {id: linkId})
-      console.log(link)
       if (link.currency) this.updateFiatRate(link.currency)
 
       this.qrCodeDialog.data = {
@@ -161,7 +173,7 @@ window.app = Vue.createApp({
       }
     },
     updatePayLink(wallet, data) {
-      let values = _.omit(
+      const values = _.omit(
         _.pick(
           data,
           'chance',
@@ -245,11 +257,102 @@ window.app = Vue.createApp({
         .catch(err => {
           LNbits.utils.notifyApiError(err)
         })
+    },
+    saveCoinflipSettings() {
+      const settings = {
+        id: this.g.user.wallets[0].id,
+        enabled: this.coinflip.coinflipEnabled,
+        haircut: this.coinflip.coinflipHaircut,
+        max_players: this.coinflip.coinflipMaxPlayers,
+        max_bet: this.coinflip.coinflipMaxBet,
+        wallet_id: this.coinflip.wallet_id
+      }
+      LNbits.api
+        .request(
+          'POST',
+          '/satsdice/api/v1/coinflip/settings',
+          this.g.user.wallets[0].adminkey,
+          settings
+        )
+        .then(response => {
+          this.coinflip.coinflipId = response.data.page_id
+          Quasar.Notify.create({
+            type: 'positive',
+            message: 'Coinflip settings saved!'
+          })
+        })
+        .catch(err => {
+          LNbits.utils.notifyApiError(err)
+        })
+    },
+    getCoinflipSettings() {
+      LNbits.api
+        .request(
+          'GET',
+          '/satsdice/api/v1/coinflip/settings',
+          this.g.user.wallets[0].adminkey
+        )
+        .then(response => {
+          this.coinflip.coinflipId = response.data.page_id
+          this.coinflip.coinflipEnabled = response.data.enabled
+          this.coinflip.coinflipHaircut = response.data.haircut
+          this.coinflip.coinflipMaxPlayers = response.data.max_players
+          this.coinflip.coinflipMaxBet = response.data.max_bet
+          this.coinflip.wallet_id = response.data.wallet_id
+        })
+        .catch(err => {
+          LNbits.utils.notifyApiError(err)
+        })
+    },
+    async createGame() {
+      const wallet = _.findWhere(this.g.user.wallets, {
+        id: this.coinflip.wallet_id
+      })
+      const data = {
+        name: this.formDialogCoinflip.data.title,
+        number_of_players: parseInt(
+          this.formDialogCoinflip.data.number_of_players
+        ),
+        buy_in: parseInt(this.formDialogCoinflip.data.buy_in),
+        page_id: this.coinflip.coinflipId
+      }
+      if (data.buy_in > this.coinflipMaxBet) {
+        Quasar.Notify.create({
+          type: 'negative',
+          message: `Max bet is ${this.coinflipMaxBet}`
+        })
+        return
+      }
+      if (this.coinflip.number_of_players > this.coinflipMaxPlayers) {
+        Quasar.Notify.create({
+          type: 'negative',
+          message: `Max players is ${this.coinflipMaxPlayers}`
+        })
+        return
+      }
+      try {
+        const response = await LNbits.api.request(
+          'POST',
+          '/satsdice/api/v1/coinflip/',
+          wallet.inkey,
+          data
+        )
+        if (response.data) {
+          this.activeGame = true
+
+          const url = new URL(window.location)
+          url.pathname = `/satsdice/coinflip/${this.coinflip.coinflipId}/${response.data}`
+          window.open(url)
+        }
+      } catch (error) {
+        LNbits.utils.notifyApiError(error)
+      }
     }
   },
   created() {
     if (this.g.user.wallets.length) {
       this.getPayLinks()
+      this.getCoinflipSettings()
     }
   }
 })

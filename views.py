@@ -5,7 +5,7 @@ from io import BytesIO
 import pyqrcode
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
-from lnbits.core.crud import get_standalone_payment
+from lnbits.core.crud import get_payment
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
 from lnbits.helpers import template_renderer
@@ -89,9 +89,8 @@ async def displaywin(request: Request, link_id: str, payment_hash: str):
         )
     rand = random.randint(0, 100)
     chance = satsdicelink.chance
-    core_payment = await get_standalone_payment(payment_hash, incoming=True)
-    status = (await core_payment.check_status()).success if core_payment else False
-    if not rand < chance or not status:
+    core_payment = await get_payment(payment_hash)
+    if not rand < chance or not core_payment.success:
         payment.lost = True
         await update_satsdice_payment(payment)
         return satsdice_renderer().TemplateResponse(
@@ -150,7 +149,6 @@ async def img(link_id):
     "/coinflip/{coinflip_page_id}/{game}", response_class=HTMLResponse
 )
 async def display_coinflip(request: Request, coinflip_page_id: str, game: str):
-    logger.debug(coinflip_page_id)
     coinflip_settings = await get_coinflip_settings_page(coinflip_page_id)
     logger.debug(coinflip_settings)
     if not coinflip_settings:
@@ -158,7 +156,6 @@ async def display_coinflip(request: Request, coinflip_page_id: str, game: str):
             status_code=HTTPStatus.NOT_FOUND, detail="Coinflip game does not exist."
         )
     winner = None
-    logger.debug("wah")
     if game:
         coinflip = await get_coinflip(game)
         if not coinflip:
