@@ -289,10 +289,11 @@ window.app = Vue.createApp({
       LNbits.api
         .request(
           'GET',
-          '/satsdice/api/v1/coinflip/settings',
+          '/satsdice/api/v1/coinflip/settings/',
           this.g.user.wallets[0].adminkey
         )
         .then(response => {
+          console.log(response.data)
           this.coinflip.coinflipId = response.data.id
           this.coinflip.coinflipEnabled = response.data.enabled
           this.coinflip.coinflipHaircut = response.data.haircut

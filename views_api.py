@@ -167,7 +167,7 @@ async def api_withdraw_hash_retrieve(
 @satsdice_api_router.get("/api/v1/coinflip/settings", status_code=HTTPStatus.OK)
 async def api_get_coinflip_settings(
     key_info: WalletTypeInfo = Depends(require_invoice_key),
-) -> CoinflipSettings:
+):
     user = await get_user(key_info.wallet.user)
     if not user:
         raise HTTPException(
@@ -192,7 +192,7 @@ async def api_create_coinflip_settings(
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="unable to change settings"
         )
-    return await create_coinflip_settings(key_info.wallet.id, coinflip_settings)
+    return await create_coinflip_settings(key_info.wallet.id, user.id, coinflip_settings)
 
 
 @satsdice_api_router.put(
@@ -279,6 +279,6 @@ async def api_join_coinflip(data: JoinCoinflipGame):
     return {"payment_hash": payment.payment_hash, "payment_request": payment.bolt11}
 
 
-@satsdice_api_router.get("/api/v1/coinflip/{coinflip_id}", status_code=HTTPStatus.OK)
+@satsdice_api_router.get("/api/v1/coinflip/coinflip/{coinflip_id}", status_code=HTTPStatus.OK)
 async def api_get_coinflip(coinflip_id: str):
     return await get_coinflip(coinflip_id)

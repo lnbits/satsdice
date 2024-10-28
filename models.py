@@ -149,6 +149,7 @@ class CreateCoinflipSettings(BaseModel):
 class CoinflipSettings(BaseModel):
     id: str
     wallet_id: str
+    user_id: str
     max_players: int
     max_bet: int
     enabled: bool

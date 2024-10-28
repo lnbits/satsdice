@@ -87,6 +87,7 @@ async def m005_add_coinflip_settings(db):
         CREATE TABLE satsdice.settings (
             id TEXT PRIMARY KEY,
             wallet_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
             haircut INTEGER NOT NULL,
             max_players INTEGER NOT NULL,
             max_bet INTEGER NOT NULL,

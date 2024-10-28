@@ -3,7 +3,7 @@ from typing import Optional, Union
 
 from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
-
+from loguru import logger
 from .models import (
     Coinflip,
     CoinflipSettings,
@@ -172,16 +172,9 @@ async def get_withdraw_hash_checkw(the_hash: str, lnurl_id: str):
 
 
 async def create_coinflip_settings(
-    wallet_id: str, data: CreateCoinflipSettings
+    wallet_id: str, user_id: str, data: CreateCoinflipSettings
 ) -> CoinflipSettings:
-    settings = CoinflipSettings(
-        id=urlsafe_short_hash(),
-        wallet_id=wallet_id,
-        max_players=data.max_players,
-        max_bet=data.max_bet,
-        enabled=data.enabled,
-        haircut=data.haircut,
-    )
+    settings = CoinflipSettings(**data.dict(), wallet_id=wallet_id, user_id=user_id, id=urlsafe_short_hash())
     await db.insert("satsdice.settings", settings)
     return settings
 
@@ -192,19 +185,12 @@ async def update_coinflip_settings(settings: CoinflipSettings) -> CoinflipSettin
 
 
 async def get_coinflip_settings(
-    coinflip_settings_id: str,
+    user_id: str,
 ) -> Optional[CoinflipSettings]:
+    logger.debug(user_id)
     return await db.fetchone(
-        "SELECT * FROM satsdice.settings WHERE id = :id",
-        {"id": coinflip_settings_id},
-        CoinflipSettings,
-    )
-
-
-async def get_coinflip_settings_wallet(wallet_id: str) -> Optional[CoinflipSettings]:
-    return await db.fetchone(
-        "SELECT * FROM satsdice.settings WHERE wallet_id = :id",
-        {"id": wallet_id},
+        "SELECT * FROM satsdice.settings WHERE user_id = :user_id",
+        {"user_id": user_id},
         CoinflipSettings,
     )
 
