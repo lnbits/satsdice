@@ -6,7 +6,6 @@ from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
 from lnbits.decorators import require_admin_key, require_invoice_key
 from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
-from loguru import logger
 from starlette.exceptions import HTTPException
 
 from .crud import (
@@ -16,7 +15,7 @@ from .crud import (
     delete_satsdice_pay,
     get_coinflip,
     get_coinflip_settings,
-    get_coinflip_settings_wallet,
+    get_coinflip_settings_from_id,
     get_satsdice_pay,
     get_satsdice_pays,
     get_withdraw_hash_checkw,
@@ -25,8 +24,8 @@ from .crud import (
 )
 from .helpers import get_pr
 from .models import (
-    Coinflip,
     CoinflipSettings,
+    CreateCoinflip,
     CreateCoinflipSettings,
     CreateSatsDiceLink,
     JoinCoinflipGame,
@@ -166,7 +165,7 @@ async def api_withdraw_hash_retrieve(
 
 @satsdice_api_router.get("/api/v1/coinflip/settings", status_code=HTTPStatus.OK)
 async def api_get_coinflip_settings(
-    key_info: WalletTypeInfo = Depends(require_invoice_key),
+    key_info: WalletTypeInfo = Depends(require_admin_key),
 ):
     user = await get_user(key_info.wallet.user)
     if not user:
@@ -177,6 +176,7 @@ async def api_get_coinflip_settings(
     if not settings:
         settings = await create_coinflip_settings(
             key_info.wallet.id,
+            key_info.wallet.user,
             CreateCoinflipSettings(),
         )
     return settings
@@ -192,15 +192,14 @@ async def api_create_coinflip_settings(
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="unable to change settings"
         )
-    return await create_coinflip_settings(key_info.wallet.id, user.id, coinflip_settings)
+    return await create_coinflip_settings(
+        key_info.wallet.id, user.id, coinflip_settings
+    )
 
 
-@satsdice_api_router.put(
-    "/api/v1/coinflip/settings/{settings_id}", status_code=HTTPStatus.CREATED
-)
+@satsdice_api_router.put("/api/v1/coinflip/settings", status_code=HTTPStatus.CREATED)
 async def api_update_coinflip_settings(
-    settings_id: str,
-    coinflip_settings: CreateCoinflipSettings,
+    coinflip_settings: CoinflipSettings,
     key_info: WalletTypeInfo = Depends(require_admin_key),
 ) -> CoinflipSettings:
     user = await get_user(key_info.wallet.user)
@@ -208,24 +207,15 @@ async def api_update_coinflip_settings(
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="unable to change settings"
         )
-    _settings = await get_coinflip_settings(settings_id)
-    if not _settings:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail="Settings not found"
-        )
-
-    for k, v in coinflip_settings.dict().items():
-        setattr(_settings, k, v)
-
-    await update_coinflip_settings(_settings)
-    return _settings
+    settings = await update_coinflip_settings(coinflip_settings)
+    return settings
 
 
 @satsdice_api_router.post("/api/v1/coinflip", status_code=HTTPStatus.OK)
 async def api_create_coinflip(
-    data: Coinflip, key_info: WalletTypeInfo = Depends(require_invoice_key)
+    data: CreateCoinflip, key_info: WalletTypeInfo = Depends(require_invoice_key)
 ):
-    coinflip_settings = await get_coinflip_settings_wallet(key_info.wallet.id)
+    coinflip_settings = await get_coinflip_settings(key_info.wallet.user)
     if not coinflip_settings:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST, detail="Couldnt load settings"
@@ -237,15 +227,16 @@ async def api_create_coinflip(
             status_code=HTTPStatus.BAD_REQUEST, detail="Number of plaers is too high"
         )
     if coinflip_settings.id != data.settings_id:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Wrong user")
-    logger.debug("coinflip_settings")
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail="Settings ID is wrong"
+        )
     coinflip = await create_coinflip(data)
     return coinflip.id
 
 
-@satsdice_api_router.post("/api/v1/coinflip/join/{game_id}", status_code=HTTPStatus.OK)
+@satsdice_api_router.post("/api/v1/coinflip/join/", status_code=HTTPStatus.OK)
 async def api_join_coinflip(data: JoinCoinflipGame):
-    coinflip_settings = await get_coinflip_settings(data.settings_id)
+    coinflip_settings = await get_coinflip_settings_from_id(data.settings_id)
     coinflip_game = await get_coinflip(data.game_id)
     if not coinflip_game:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="No game found")
@@ -279,6 +270,8 @@ async def api_join_coinflip(data: JoinCoinflipGame):
     return {"payment_hash": payment.payment_hash, "payment_request": payment.bolt11}
 
 
-@satsdice_api_router.get("/api/v1/coinflip/coinflip/{coinflip_id}", status_code=HTTPStatus.OK)
+@satsdice_api_router.get(
+    "/api/v1/coinflip/coinflip/{coinflip_id}", status_code=HTTPStatus.OK
+)
 async def api_get_coinflip(coinflip_id: str):
     return await get_coinflip(coinflip_id)

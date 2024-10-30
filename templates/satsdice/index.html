@@ -83,16 +83,17 @@
     <q-card>
       <q-card-section>
         <q-toggle
-          v-model="coinflip.coinflipEnabled"
+          v-model="coinflipSettings.enabled"
           label="Enable Coinflip Games"
+          @click="saveCoinflipSettings"
         ></q-toggle>
         <div class="row">
           <div class="col">
             <q-input
-              v-if="coinflip.coinflipEnabled"
+              v-if="coinflipSettings.enabled"
               filled
               dense
-              v-model.number="coinflip.coinflipHaircut"
+              v-model.number="coinflipSettings.haircut"
               type="number"
               label="Haircut on coiflips (%)"
             ></q-input>
@@ -100,10 +101,10 @@
           <div class="col">
             <q-input
               class="q-ml-md"
-              v-if="coinflip.coinflipEnabled"
+              v-if="coinflipSettings.enabled"
               filled
               dense
-              v-model.number="coinflip.coinflipMaxPlayers"
+              v-model.number="coinflipSettings.max_players"
               type="number"
               label="Max players per game"
             ></q-input>
@@ -111,10 +112,10 @@
           <div class="col">
             <q-input
               class="q-ml-md"
-              v-if="coinflip.coinflipEnabled"
+              v-if="coinflipSettings.enabled"
               filled
               dense
-              v-model.number="coinflip.coinflipMaxBet"
+              v-model.number="coinflipSettings.max_bet"
               type="number"
               label="Max Bet Size (sats)"
             ></q-input>
@@ -123,11 +124,11 @@
         <div class="row q-mt-lg">
           <div class="col">
             <q-select
-              v-if="coinflip.coinflipEnabled"
+              v-if="coinflipSettings.enabled"
               filled
               dense
               emit-value
-              v-model="coinflip.wallet_id"
+              v-model="coinflipSettings.wallet_id"
               :options="g.user.walletOptions"
               label="Wallet *"
             ></q-select>
@@ -135,14 +136,21 @@
         </div>
         <q-btn
           class="q-mt-md"
-          v-if="coinflip.coinflipEnabled"
+          v-if="coinflipSettings.enabled && !coinflipSettings.id"
           @click="saveCoinflipSettings"
           color="primary"
           >Save Settings</q-btn
         >
         <q-btn
           class="q-mt-md"
-          v-if="coinflip.coinflipId"
+          v-if="coinflipSettings.enabled && coinflipSettings.id"
+          @click="saveCoinflipSettings"
+          color="primary"
+          >Update Settings</q-btn
+        >
+        <q-btn
+          class="q-mt-md q-ml-md"
+          v-if="coinflipSettings.id"
           @click="formDialogCoinflip.show = true"
           color="primary"
           >Create coinflip game</q-btn
@@ -289,7 +297,7 @@
               dense
               v-model.trim="formDialogCoinflip.data.number_of_players"
               type="number"
-              :label="'Number of players (max ' + coinflip.coinflipMaxPlayers + ')'"
+              :label="'Number of players (max ' + coinflipSettings.max_players + ')'"
             ></q-input>
           </div>
           <div class="col">
@@ -299,7 +307,7 @@
               dense
               v-model.trim="formDialogCoinflip.data.buy_in"
               type="number"
-              :label="'Buy in (max ' + coinflip.coinflipMaxBet + 'sats)'"
+              :label="'Buy in (max ' + coinflipSettings.max_bet + 'sats)'"
             ></q-input>
           </div>
         </div>
@@ -308,7 +316,7 @@
             unelevated
             color="primary"
             :disable="
-              formDialogCoinflip.data.title == null || formDialogCoinflip.data.number_of_players > coinflip.coinflipMaxPlayers || formDialogCoinflip.data.buy_in > coinflip.coinflipMaxBet"
+              formDialogCoinflip.data.title == null || formDialogCoinflip.data.number_of_players > coinflipSettings.max_players || formDialogCoinflip.data.buy_in > coinflipSettings.max_bet"
             type="submit"
             >Create coinflip</q-btn
           >

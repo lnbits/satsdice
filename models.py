@@ -156,6 +156,13 @@ class CoinflipSettings(BaseModel):
     haircut: float
 
 
+class CreateCoinflip(BaseModel):
+    settings_id: Optional[str] = None
+    name: str
+    number_of_players: int = 0
+    buy_in: int = 0
+
+
 class Coinflip(BaseModel):
     id: Optional[str] = None
     settings_id: Optional[str] = None

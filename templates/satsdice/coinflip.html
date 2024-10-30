@@ -1,25 +1,15 @@
-{% extends "public.html" %} {% block scripts %} {{ window_vars(user) }}
-<script>
-  const coinflipHaircut = parseInt('{{ coinflipHaircut }}')
-  const coinflipMaxPlayers = parseInt('{{ coinflipMaxPlayers }}')
-  const coinflipMaxBet = parseInt('{{ coinflipMaxBet }}')
-  const coinflipGameId = '{{ coinflipGameId }}'
-  const coinflipPageId = '{{ coinflipPageId }}'
-  const coinflipWinner = '{{ coinflipWinner }}'
-</script>
-<script src="{{ static_url_for('satsdice/static', path='js/coinflip.js') }}"></script>
-{% endblock %} {% block page %}
+{% extends "public.html" %} {% block page %}
 <q-card class="fixed-center q-pa-xl" style="width: 600px">
   <q-card-section class="q-pa-none" v-if="activeGame && !gameComplete">
     <center>
-      <h3 class="q-my-none q-mb-xl">{{ coinflip.name }}</h3>
+      <h3 class="q-my-none q-mb-xl"><span v-text="coinflip.name"></span></h3>
     </center>
     <div class="row">
       <div class="col">
         <center>
           <q-badge outline size="xl" color="secondary">
             <div class="text-subtitle1">
-              No. of Players: {{coinflip.number_of_players}}
+              No. of Players: <span v-text="coinflip.number_of_players"></span>
             </div>
           </q-badge>
         </center>
@@ -27,7 +17,9 @@
       <div class="col">
         <center>
           <q-badge outline size="xl" color="secondary">
-            <div class="text-subtitle1">Buy In: {{coinflip.buy_in}} sats</div>
+            <div class="text-subtitle1">
+              Buy In: <span v-text="coinflip.buy_in"></span> sats
+            </div>
           </q-badge>
         </center>
       </div>
@@ -35,7 +27,7 @@
         <center>
           <q-badge outline size="xl" color="secondary">
             <div class="text-subtitle1">
-              Registration fee: {{coinflipHaircut}} %
+              Registration fee: <span v-text="coinflipHaircut"></span> %
             </div>
           </q-badge>
         </center>
@@ -63,10 +55,10 @@
     </q-form>
   </q-card-section>
 
-  <q-card-section v-if="gameComplete" class="q-pa-none" v-else>
+  <q-card-section v-if="gameComplete" class="q-pa-none">
     <center>
       <h2 class="q-my-none">Game Complete</h2>
-      <h5 class="q-my-none">{{coinflipWinner}} won!</h5>
+      <h5 class="q-my-none"><span v-text="coinflipWinner"></span> won!</h5>
       <q-icon color="teal" name="check" size="30em"></q-icon>
     </center>
   </q-card-section>
@@ -88,4 +80,185 @@
     </div>
   </q-card>
 </q-dialog>
+
+{% endblock %} {% block scripts %}
+<script>
+  window.app = Vue.createApp({
+    el: '#vue',
+    mixins: [windowMixin],
+    data() {
+      return {
+        activeGame: false,
+        gameComplete: false,
+        gameId: '',
+        coinflip: {
+          name: '',
+          number_of_players: 0,
+          buy_in: 0
+        },
+        coinflipHaircut: parseInt('{{ coinflipHaircut }}'),
+        coinflipMaxPlayers: parseInt('{{ coinflipMaxPlayers }}'),
+        coinflipMaxBet: parseInt('{{ coinflipMaxBet }}'),
+        coinflipGameId: '{{ coinflipGameId }}',
+        coinflipPageId: '{{ coinflipPageId }}',
+        coinflipWinner: '{{ coinflipWinner }}',
+        lnaddress: '',
+        qr: {
+          show: false,
+          payment_request: '',
+          payment_hash: ''
+        }
+      }
+    },
+    methods: {
+      getQueryParam(param) {
+        const urlParams = new URLSearchParams(window.location.search)
+        return urlParams.get(param)
+      },
+      async getGame() {
+        const response = await LNbits.api.request(
+          'GET',
+          `/satsdice/api/v1/coinflip/coinflip/${this.gameId}`,
+          ''
+        )
+        if (response.data) {
+          this.coinflip = response.data
+          this.activeGame = true
+        }
+      },
+      async joinGame() {
+        try {
+          const data = {
+            game_id: this.gameId,
+            settings_id: this.coinflipPageId,
+            ln_address: this.lnaddress
+          }
+          const response = await LNbits.api.request(
+            'POST',
+            '/satsdice/api/v1/coinflip/join/',
+            '',
+            data
+          )
+          if (response.data) {
+            this.qr.payment_request = response.data.payment_request
+            this.qr.payment_hash = response.data.payment_hash
+            this.qr.show = true
+            this.websocket()
+          }
+        } catch (error) {
+          LNbits.utils.notifyApiError(error)
+        }
+      },
+      websocket() {
+        const url = new URL(window.location)
+        url.protocol = url.protocol === 'https:' ? 'wss' : 'ws'
+        url.pathname = `/api/v1/ws/${this.qr.payment_hash}`
+        const ws = new WebSocket(url)
+        ws.addEventListener('message', async ({data}) => {
+          console.log(data)
+          dataArr = data.split(',')
+          if (dataArr[0] == 'paid') {
+            this.$q.notify({
+              type: 'positive',
+              message: 'Invoice Paid! Waiting for more players...'
+            })
+            this.qr.show = false
+            ws.close()
+          }
+          if (dataArr[0] == 'won') {
+            this.qr.show = false
+            this.coinflipWinner = dataArr[1]
+            this.gameComplete = true
+            this.$q.notify({
+              type: 'positive',
+              message:
+                'You flipping won the coinflip!!!\n' +
+                'Payment will be with you shortly'
+            })
+            this.confettiFireworks()
+            ws.close()
+          }
+          if (dataArr[0] == 'lost') {
+            this.$q.notify({
+              type: 'negative',
+              message: 'You lost! Good luck next time!'
+            })
+            this.qr.show = false
+            this.coinflipWinner = dataArr[1]
+            this.gameComplete = true
+            ws.close()
+          }
+          if (dataArr[0] == 'refund') {
+            this.$q.notify({
+              type: 'negative',
+              message:
+                'Game was already full :( Refunding your sats (minus registration fee)'
+            })
+            this.qr.show = false
+            this.coinflipWinner = dataArr[1]
+            this.gameComplete = true
+            ws.close()
+          } else {
+            console.log(data)
+          }
+        })
+      },
+      copyText() {
+        Quasar.copyToClipboard(window.location.href).then(() => {
+          Quasar.Notify.create({
+            message: 'Copied coinflip link to clipboard!',
+            position: 'bottom'
+          })
+        })
+      },
+      copyInvoice() {
+        Quasar.copyToClipboard(this.qr.payment_request).then(() => {
+          Quasar.Notify.create({
+            message: 'Invoice URL copied to clipboard!',
+            position: 'bottom'
+          })
+        })
+      },
+      confettiFireworks() {
+        const duration = 3 * 1000
+        const animationEnd = Date.now() + duration
+        const defaults = {startVelocity: 30, spread: 360, ticks: 60, zIndex: 0}
+
+        function randomInRange(min, max) {
+          return Math.random() * (max - min) + min
+        }
+
+        const interval = setInterval(function () {
+          const timeLeft = animationEnd - Date.now()
+
+          if (timeLeft <= 0) {
+            return clearInterval(interval)
+          }
+
+          const particleCount = 5 * (timeLeft / duration)
+          // since particles fall down, start a bit higher than random
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: {x: randomInRange(0.1, 0.3), y: Math.random() - 0.2}
+          })
+          confetti({
+            ...defaults,
+            particleCount,
+            origin: {x: randomInRange(0.7, 0.9), y: Math.random() - 0.2}
+          })
+        }, 250)
+      }
+    },
+    async mounted() {
+      this.gameId = this.coinflipGameId
+      if (this.gameId) {
+        await this.getGame()
+        if (this.coinflip.players.length > this.coinflipMaxPlayers) {
+          this.gameComplete = true
+        }
+      }
+    }
+  })
+</script>
 {% endblock %}

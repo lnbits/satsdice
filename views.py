@@ -14,7 +14,7 @@ from loguru import logger
 from .crud import (
     create_satsdice_withdraw,
     get_coinflip,
-    get_coinflip_settings,
+    get_coinflip_settings_from_id,
     get_satsdice_pay,
     get_satsdice_payment,
     get_satsdice_withdraw,
@@ -149,7 +149,7 @@ async def img(link_id):
     "/coinflip/{coinflip_settings_id}/{game}", response_class=HTMLResponse
 )
 async def display_coinflip(request: Request, coinflip_settings_id: str, game: str):
-    coinflip_settings = await get_coinflip_settings(coinflip_settings_id)
+    coinflip_settings = await get_coinflip_settings_from_id(coinflip_settings_id)
     logger.debug(coinflip_settings)
     if not coinflip_settings:
         raise HTTPException(
@@ -158,6 +158,7 @@ async def display_coinflip(request: Request, coinflip_settings_id: str, game: st
     winner = None
     if game:
         coinflip = await get_coinflip(game)
+        logger.debug(coinflip)
         if not coinflip:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="Coinflip game does not exist."

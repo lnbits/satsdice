@@ -54,12 +54,12 @@ window.app = Vue.createApp({
         show: false,
         data: null
       },
-      coinflip: {
-        coinflipId: '',
-        coinflipEnabled: false,
-        coinflipHaircut: 0,
-        coinflipMaxPlayers: 2,
-        coinflipMaxBet: 1000,
+      coinflipSettings: {
+        id: '',
+        enabled: false,
+        haircut: 0,
+        max_players: 2,
+        max_bet: 1000,
         wallet_id: null
       }
     }
@@ -80,11 +80,16 @@ window.app = Vue.createApp({
     }
   },
   methods: {
+    ////////////////////////////////////////
+    ////////                      //////////
+    ////////       SATSDICE       //////////
+    ////////                      //////////
+    ////////////////////////////////////////
     chanceValueTableCalc(multiplier, haircut) {
       return ((1 / multiplier) * 100 - haircut).toFixed(2)
     },
-    getPayLinks() {
-      LNbits.api
+    async getPayLinks() {
+      await LNbits.api
         .request(
           'GET',
           '/satsdice/api/v1/links?all_wallets=true',
@@ -258,24 +263,37 @@ window.app = Vue.createApp({
           LNbits.utils.notifyApiError(err)
         })
     },
-    saveCoinflipSettings() {
-      const settings = {
-        id: this.g.user.wallets[0].id,
-        enabled: this.coinflip.coinflipEnabled,
-        haircut: this.coinflip.coinflipHaircut,
-        max_players: this.coinflip.coinflipMaxPlayers,
-        max_bet: this.coinflip.coinflipMaxBet,
-        wallet_id: this.coinflip.wallet_id
+    ////////////////////////////////////////
+    ////////                      //////////
+    ////////       COINFLIPS      //////////
+    ////////                      //////////
+    ////////////////////////////////////////
+    async saveCoinflipSettings() {
+      let settings = {
+        enabled: this.coinflipSettings.enabled,
+        haircut: this.coinflipSettings.haircut,
+        max_players: this.coinflipSettings.max_players,
+        max_bet: this.coinflipSettings.max_bet
       }
-      LNbits.api
+      let method = ''
+      if (this.coinflipSettings.id != null) {
+        settings.id = this.coinflipSettings.id
+        settings.wallet_id = this.coinflipSettings.wallet_id
+        settings.user_id = this.g.user.id
+        method = 'PUT'
+      } else {
+        method = 'POST'
+      }
+      console.log(this.g.user)
+      await LNbits.api
         .request(
-          'POST',
+          method,
           '/satsdice/api/v1/coinflip/settings',
           this.g.user.wallets[0].adminkey,
           settings
         )
         .then(response => {
-          this.coinflip.coinflipId = response.data.page_id
+          this.coinflipSettings = response.data
           Quasar.Notify.create({
             type: 'positive',
             message: 'Coinflip settings saved!'
@@ -285,21 +303,21 @@ window.app = Vue.createApp({
           LNbits.utils.notifyApiError(err)
         })
     },
-    getCoinflipSettings() {
-      LNbits.api
+    async getCoinflipSettings() {
+      await LNbits.api
         .request(
           'GET',
-          '/satsdice/api/v1/coinflip/settings/',
+          '/satsdice/api/v1/coinflip/settings',
           this.g.user.wallets[0].adminkey
         )
         .then(response => {
           console.log(response.data)
-          this.coinflip.coinflipId = response.data.id
-          this.coinflip.coinflipEnabled = response.data.enabled
-          this.coinflip.coinflipHaircut = response.data.haircut
-          this.coinflip.coinflipMaxPlayers = response.data.max_players
-          this.coinflip.coinflipMaxBet = response.data.max_bet
-          this.coinflip.wallet_id = response.data.wallet_id
+          this.coinflipSettings.id = response.data.id
+          this.coinflipSettings.enabled = response.data.enabled
+          this.coinflipSettings.haircut = response.data.haircut
+          this.coinflipSettings.max_players = response.data.max_players
+          this.coinflipSettings.max_bet = response.data.max_bet
+          this.coinflipSettings.wallet_id = response.data.wallet_id
         })
         .catch(err => {
           LNbits.utils.notifyApiError(err)
@@ -307,7 +325,7 @@ window.app = Vue.createApp({
     },
     async createGame() {
       const wallet = _.findWhere(this.g.user.wallets, {
-        id: this.coinflip.wallet_id
+        id: this.coinflipSettings.wallet_id
       })
       const data = {
         name: this.formDialogCoinflip.data.title,
@@ -315,19 +333,22 @@ window.app = Vue.createApp({
           this.formDialogCoinflip.data.number_of_players
         ),
         buy_in: parseInt(this.formDialogCoinflip.data.buy_in),
-        page_id: this.coinflip.coinflipId
+        settings_id: this.coinflipSettings.id
       }
-      if (data.buy_in > this.coinflipMaxBet) {
+      if (data.buy_in > this.coinflipSettings.max_bet) {
         Quasar.Notify.create({
           type: 'negative',
-          message: `Max bet is ${this.coinflipMaxBet}`
+          message: `Max bet is ${this.coinflipSettings.max_bet}`
         })
         return
       }
-      if (this.coinflip.number_of_players > this.coinflipMaxPlayers) {
+      if (
+        this.formDialogCoinflip.number_of_players >
+        this.coinflipSettings.max_players
+      ) {
         Quasar.Notify.create({
           type: 'negative',
-          message: `Max players is ${this.coinflipMaxPlayers}`
+          message: `Max players is ${this.coinflipSettings.max_players}`
         })
         return
       }
@@ -342,7 +363,7 @@ window.app = Vue.createApp({
           this.activeGame = true
 
           const url = new URL(window.location)
-          url.pathname = `/satsdice/coinflip/${this.coinflip.coinflipId}/${response.data}`
+          url.pathname = `/satsdice/coinflip/${this.coinflipSettings.id}/${response.data}`
           window.open(url)
         }
       } catch (error) {
@@ -350,10 +371,11 @@ window.app = Vue.createApp({
       }
     }
   },
-  created() {
-    if (this.g.user.wallets.length) {
-      this.getPayLinks()
-      this.getCoinflipSettings()
-    }
+  async created() {
+    // CHECK SATSDICE LINKS
+    await this.getPayLinks()
+
+    // CHECK COINFLIP SETTINGS
+    await this.getCoinflipSettings()
   }
 })
