@@ -245,8 +245,5 @@ window.app = Vue.createApp({
   async created() {
     // CHECK SATSDICE LINKS
     await this.getPayLinks()
-
-    // CHECK COINFLIP SETTINGS
-    await this.getCoinflipSettings()
   }
 })
