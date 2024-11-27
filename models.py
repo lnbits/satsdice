@@ -1,6 +1,6 @@
 import json
-from sqlite3 import Row
-from typing import Dict, Optional
+from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import Query, Request
 from lnurl import Lnurl
@@ -15,24 +15,20 @@ class SatsdiceLink(BaseModel):
     title: str
     min_bet: int
     max_bet: int
-    amount: int
-    served_meta: int
-    served_pr: int
     multiplier: float
     haircut: float
     chance: float
     base_url: str
-    open_time: int
+    amount: int = 0
+    served_meta: int = 0
+    served_pr: int = 0
+    # TODO: Change to datetime
+    open_time: int = int(datetime.now(timezone.utc).timestamp())
 
     def lnurl(self, req: Request) -> str:
         return lnurl_encode(
             str(req.url_for("satsdice.lnurlp_response", link_id=self.id))
         )
-
-    @classmethod
-    def from_row(cls, row: Row) -> "SatsdiceLink":
-        data = dict(row)
-        return cls(**data)
 
     @property
     def lnurlpay_metadata(self) -> LnurlPayMetadata:
@@ -50,7 +46,7 @@ class SatsdiceLink(BaseModel):
             )
         )
 
-    def success_action(self, payment_hash: str, req: Request) -> Optional[Dict]:
+    def success_action(self, payment_hash: str, req: Request) -> Optional[dict]:
         url = str(
             req.url_for(
                 "satsdice.displaywin", link_id=self.id, payment_hash=payment_hash
@@ -63,8 +59,8 @@ class SatsdicePayment(BaseModel):
     payment_hash: str
     satsdice_pay: str
     value: int
-    paid: bool
-    lost: bool
+    paid: bool = False
+    lost: bool = False
 
 
 class SatsdiceWithdraw(BaseModel):
@@ -104,17 +100,13 @@ class HashCheck(BaseModel):
     id: str
     lnurl_id: str
 
-    @classmethod
-    def from_row(cls, row: Row):
-        return cls(**dict(row))
-
 
 class CreateSatsDiceLink(BaseModel):
     wallet: str = Query(None)
     title: str = Query(None)
     base_url: str = Query(None)
-    min_bet: str = Query(None)
-    max_bet: str = Query(None)
+    min_bet: int = Query(None)
+    max_bet: int = Query(None)
     multiplier: float = Query(0)
     chance: float = Query(0)
     haircut: float = Query(0)
@@ -140,35 +132,3 @@ class CreateSatsDiceWithdraws(BaseModel):
     uses: int = Query(0)
     wait_time: str = Query(None)
     is_unique: bool = Query(False)
-
-
-################
-### Coinflip ###
-################
-
-
-class CoinflipSettings(BaseModel):
-    id: Optional[str] = None
-    page_id: str = ""
-    wallet_id: str = ""
-    max_players: int = 5
-    max_bet: int = 100
-    enabled: bool = False
-    haircut: float = 0
-
-
-class Coinflip(BaseModel):
-    id: Optional[str] = None
-    name: str
-    number_of_players: int = 0
-    buy_in: int = 0
-    players: str = ""
-    page_id: str = ""
-    completed: bool = False
-    created_at: float = 0.0
-
-
-class JoinCoinflipGame(BaseModel):
-    game_id: str = Query(None)
-    page_id: str = Query(None)
-    ln_address: str = Query(None)
