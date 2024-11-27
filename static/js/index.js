@@ -120,6 +120,7 @@ window.app = Vue.createApp({
       this.formDialog.show = true
       this.formDialog.fixedAmount =
         this.formDialog.data.min === this.formDialog.data.max
+      this.multiValue = link.multiplier
     },
     sendFormData() {
       const wallet = _.findWhere(this.g.user.wallets, {
