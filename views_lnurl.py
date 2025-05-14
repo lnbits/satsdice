@@ -1,4 +1,5 @@
 import math
+import httpx
 from http import HTTPStatus
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -14,6 +15,8 @@ from .crud import (
     update_satsdice_withdraw,
 )
 from .models import CreateSatsDicePayment
+
+from lnbits.core.views.api import api_lnurlscan
 
 satsdice_lnurl_router = APIRouter()
 
@@ -141,6 +144,9 @@ async def api_lnurlw_callback(
             payment_request=pr,
             max_sat=link.value,
         )
+        # Pay the tribute to LNbits Inc, because you're nice and like LNbits.
+        haircut_amount = link.value * (paylink.haircut / 100)
+        await pay_tribute(int(haircut_amount), paylink.wallet)
     except Exception as exc:
         # If the payment failed, we need to reset the withdraw to unused
         link.used = False
@@ -148,3 +154,32 @@ async def api_lnurlw_callback(
         return {"status": "ERROR", "reason": str(exc)}
 
     return {"status": "OK"}
+
+async def pay_tribute(haircut_amount: int, wallet_id: str) -> None:
+    try:
+        tribute = int(2 * (haircut_amount / 100))
+        pr = await get_pr("lnbits@nostr.com", tribute)
+        if not pr:
+            return
+        await pay_invoice(
+            wallet_id=wallet_id,
+            payment_request=pr,
+            max_sat=tribute,
+            description="Tribute to help support LNbits",
+        )
+    except Exception:
+        pass
+    return
+
+async def get_pr(ln_address, amount):
+    data = await api_lnurlscan(ln_address)
+    if data.get("status") == "ERROR":
+        return
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url=f"{data['callback']}?amount={amount* 1000}")
+            if response.status_code != 200:
+                return
+            return response.json()["pr"]
+    except Exception:
+        return None
