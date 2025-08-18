@@ -21,23 +21,6 @@ class SatsdiceLink(BaseModel):
     open_time: int = int(datetime.now(timezone.utc).timestamp())
 
 
-#     @property
-#     def lnurlpay_metadata(self) -> LnurlPayMetadata:
-#         return LnurlPayMetadata(
-#             json.dumps(
-#                 [
-#                     [
-#                         "text/plain",
-#                         (
-#                             f"{self.title} (Chance: {self.chance}%, "
-#                             f"Multiplier: {self.multiplier})"
-#                         ),
-#                     ]
-#                 ]
-#             )
-#         )
-
-
 class SatsdicePayment(BaseModel):
     payment_hash: str
     satsdice_pay: str
@@ -55,15 +38,10 @@ class SatsdiceWithdraw(BaseModel):
     open_time: int
     used: int
 
+    @property
+    def is_spent(self) -> bool:
+        return self.used >= 1
 
-#     def lnurl(self, req: Request) -> Lnurl:
-#         return lnurl_encode(
-#             str(req.url_for("satsdice.lnurlw_response", unique_hash=self.unique_hash))
-#         )
-
-#     @property
-#     def is_spent(self) -> bool:
-#         return self.used >= 1
 
 #     def lnurl_response(self, req: Request):
 #         url = str(
