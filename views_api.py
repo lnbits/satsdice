@@ -1,11 +1,9 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query
 from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.decorators import require_admin_key, require_invoice_key
-from lnurl.exceptions import InvalidUrl as LnurlInvalidUrl
-from starlette.exceptions import HTTPException
 
 from .crud import (
     create_satsdice_pay,
@@ -15,42 +13,28 @@ from .crud import (
     get_withdraw_hash_checkw,
     update_satsdice_pay,
 )
-from .models import CreateSatsDiceLink
+from .models import CreateSatsDiceLink, SatsdiceLink
 
 satsdice_api_router = APIRouter()
 
 
 @satsdice_api_router.get("/api/v1/links")
 async def api_links(
-    request: Request,
-    wallet: WalletTypeInfo = Depends(require_invoice_key),
+    key_info: WalletTypeInfo = Depends(require_invoice_key),
     all_wallets: bool = Query(False),
-):
-    wallet_ids = [wallet.wallet.id]
-
+) -> list[SatsdiceLink]:
+    wallet_ids = [key_info.wallet.id]
     if all_wallets:
-        user = await get_user(wallet.wallet.user)
+        user = await get_user(key_info.wallet.user)
         if user:
             wallet_ids = user.wallet_ids
-
-    try:
-        links = await get_satsdice_pays(wallet_ids)
-
-        return [{**link.dict(), **{"lnurl": link.lnurl(request)}} for link in links]
-    except LnurlInvalidUrl as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.UPGRADE_REQUIRED,
-            detail="""
-            LNURLs need to be delivered over a
-            publically accessible `https` domain or Tor.
-            """,
-        ) from exc
+    return await get_satsdice_pays(wallet_ids)
 
 
 @satsdice_api_router.get("/api/v1/links/{link_id}")
 async def api_link_retrieve(
     link_id: str, wallet: WalletTypeInfo = Depends(require_invoice_key)
-):
+) -> SatsdiceLink:
     link = await get_satsdice_pay(link_id)
 
     if not link:
@@ -63,14 +47,14 @@ async def api_link_retrieve(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your pay link."
         )
 
-    return {**link.dict(), **{"lnurl": link.lnurl}}
+    return link
 
 
 @satsdice_api_router.post("/api/v1/links", status_code=HTTPStatus.CREATED)
 async def api_create_satsdice_link(
     data: CreateSatsDiceLink,
     wallet: WalletTypeInfo = Depends(require_admin_key),
-):
+) -> SatsdiceLink:
     if data.min_bet > data.max_bet:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
 
@@ -82,7 +66,7 @@ async def api_create_satsdice_link(
 
     data.wallet = data.wallet or wallet.wallet.id
     link = await create_satsdice_pay(data=data)
-    return {**link.dict(), **{"lnurl": link.lnurl}}
+    return link
 
 
 @satsdice_api_router.put("/api/v1/links/{link_id}", status_code=HTTPStatus.OK)
@@ -90,7 +74,7 @@ async def api_update_satsdice_link(
     link_id: str,
     data: CreateSatsDiceLink,
     wallet: WalletTypeInfo = Depends(require_admin_key),
-):
+) -> SatsdiceLink:
     link = await get_satsdice_pay(link_id)
     if not link:
         raise HTTPException(
@@ -109,15 +93,15 @@ async def api_update_satsdice_link(
     data.wallet = data.wallet or wallet.wallet.id
     for k, v in data.dict().items():
         setattr(link, k, v)
-    await update_satsdice_pay(link)
-    return {**link.dict(), **{"lnurl": link.lnurl}}
+    link = await update_satsdice_pay(link)
+    return link
 
 
 @satsdice_api_router.delete("/api/v1/links/{link_id}")
 async def api_link_delete(
     link_id: str,
     wallet: WalletTypeInfo = Depends(require_admin_key),
-):
+) -> None:
     link = await get_satsdice_pay(link_id)
     if not link:
         raise HTTPException(

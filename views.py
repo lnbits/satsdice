@@ -1,8 +1,6 @@
 import random
 from http import HTTPStatus
-from io import BytesIO
 
-import pyqrcode
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from lnbits.core.crud import get_payment
@@ -47,7 +45,6 @@ async def display(request: Request, link_id: str):
             "request": request,
             "chance": link.chance,
             "multiplier": link.multiplier,
-            "lnurl": link.lnurl(request),
             "unique": True,
         },
     )
@@ -79,7 +76,6 @@ async def displaywin(request: Request, link_id: str, payment_hash: str):
                 "value": withdraw_link.value,
                 "chance": satsdicelink.chance,
                 "multiplier": satsdicelink.multiplier,
-                "lnurl": withdraw_link.lnurl(request),
                 "paid": False,
                 "lost": False,
             },
@@ -112,31 +108,7 @@ async def displaywin(request: Request, link_id: str, payment_hash: str):
             "value": withdraw_link.value,
             "chance": satsdicelink.chance,
             "multiplier": satsdicelink.multiplier,
-            "lnurl": withdraw_link.lnurl(request),
             "paid": False,
             "lost": False,
-        },
-    )
-
-
-@satsdice_generic_router.get("/img/{link_id}", response_class=HTMLResponse)
-async def img(link_id):
-    link = await get_satsdice_pay(link_id)
-    if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="satsdice link does not exist."
-        )
-
-    qr = pyqrcode.create(link.lnurl)
-    stream = BytesIO()
-    qr.svg(stream, scale=3)
-    return (
-        stream.getvalue(),
-        200,
-        {
-            "Content-Type": "image/svg+xml",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            "Pragma": "no-cache",
-            "Expires": "0",
         },
     )
