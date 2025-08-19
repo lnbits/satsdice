@@ -43,6 +43,7 @@ async def display(request: Request, link_id: str):
         "satsdice/display.html",
         {
             "request": request,
+            "link_id": link_id,
             "chance": link.chance,
             "multiplier": link.multiplier,
             "unique": True,

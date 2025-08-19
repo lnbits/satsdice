@@ -42,7 +42,7 @@ window.app = Vue.createApp({
           max_bet: 1000,
           currency: 'satoshis',
           comment_chars: 0,
-          disposable: true,
+          disposable: true
         }
       },
       qrCodeDialog: {
@@ -174,7 +174,7 @@ window.app = Vue.createApp({
           max_bet: 1000,
           currency: 'satoshis',
           comment_chars: 0,
-          disposable: true,
+          disposable: true
         }
       }
     },

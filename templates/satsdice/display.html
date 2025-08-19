@@ -3,19 +3,7 @@
   <div class="col-12 col-sm-6 col-md-5 col-lg-4">
     <q-card class="q-pa-lg">
       <q-card-section class="q-pa-none">
-        <div class="text-center">
-          <a class="text-secondary" href="lightning:{{ lnurl }}">
-            <lnbits-qrcode
-              :value="'lightning:{{ lnurl }}'"
-              class="rounded-borders"
-            ></lnbits-qrcode>
-          </a>
-        </div>
-        <div class="row q-mt-lg">
-          <q-btn outline color="grey" @click="copyText('{{ lnurl }}')"
-            >Copy Satsdice LNURL</q-btn
-          >
-        </div>
+        <lnbits-qrcode-lnurl :url="url"></lnbits-qrcode-lnurl>
       </q-card-section>
     </q-card>
   </div>
@@ -23,8 +11,7 @@
     <q-card>
       <q-card-section>
         <h6 class="text-subtitle1 q-mb-sm q-mt-none">
-          Chance of winning: {% raw %}{{ chance }}{% endraw %}, Amount
-          multiplier: {{ multiplier }}
+          Chance of winning: {{ chance }}, Amount multiplier: {{ multiplier }}
         </h6>
         <p class="q-my-none">
           Use a LNURL compatible bitcoin wallet to play the satsdice.
@@ -44,8 +31,8 @@
     mixins: [windowMixin],
     data() {
       return {
-        here: location.protocol + '//' + location.host,
-        chance: parseFloat('{{chance}}') + '%'
+        url: `${window.location.origin}/satsdice/api/v1/lnurlp/{{ link_id }}`,
+        chance: parseFloat('{{ chance }}') + '%'
       }
     },
     filters: {
