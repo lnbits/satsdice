@@ -17,6 +17,7 @@ class SatsdiceLink(BaseModel):
     amount: int = 0
     served_meta: int = 0
     served_pr: int = 0
+    disposable: bool = True
     # TODO: Change to datetime
     open_time: int = int(datetime.now(timezone.utc).timestamp())
 
@@ -57,6 +58,7 @@ class CreateSatsDiceLink(BaseModel):
     multiplier: float = Query(0)
     chance: float = Query(0)
     haircut: float = Query(0)
+    disposable: bool = Query(True)
 
 
 class CreateSatsDicePayment(BaseModel):

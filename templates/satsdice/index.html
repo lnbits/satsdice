@@ -171,6 +171,20 @@
           ></q-slider>
         </center>
 
+        <h5 class="text-caption q-mt-sm q-mb-none">
+          LUD-11: Disposable and storeable payRequests.
+        </h5>
+        <div class="row">
+          <div class="col-12">
+            <q-checkbox
+              dense
+              :toggle-indeterminate="false"
+              v-model="formDialog.data.disposable"
+              label="If enabled, the LNURL will not be stored (default)."
+            />
+          </div>
+        </div>
+
         <div class="row q-mt-lg">
           <q-btn
             v-if="formDialog.data.id"

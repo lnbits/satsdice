@@ -44,6 +44,7 @@ async def m002_initial(db):
 
 async def m003_initial(db):
     """
+
     Creates an improved satsdice table and migrates the existing data.
     """
     await db.execute(
@@ -70,4 +71,13 @@ async def m004_make_hash_check(db):
             lnurl_id TEXT
         );
     """
+    )
+
+
+async def m005_add_disposable(db):
+    """
+    Adds a disposable column to satsdice_pay.
+    """
+    await db.execute(
+        "ALTER TABLE satsdice.satsdice_pay ADD COLUMN disposable BOOL DEFAULT TRUE"
     )

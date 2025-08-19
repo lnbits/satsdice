@@ -111,6 +111,7 @@ async def api_lnurlp_callback(
     return LnurlPayActionResponse(
         pr=parse_obj_as(LightningInvoice, payment.bolt11),
         successAction=success_action,
+        disposable=link.disposable,
     )
 
 

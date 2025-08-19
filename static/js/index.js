@@ -41,7 +41,8 @@ window.app = Vue.createApp({
           min_bet: 10,
           max_bet: 1000,
           currency: 'satoshis',
-          comment_chars: 0
+          comment_chars: 0,
+          disposable: true,
         }
       },
       qrCodeDialog: {
@@ -126,7 +127,8 @@ window.app = Vue.createApp({
               (link.success_url ? ' and URL "' + link.success_url + '"' : '')
             : 'do nothing',
         pay_url: link.pay_url,
-        print_url: link.print_url
+        print_url: link.print_url,
+        disposable: link.disposable
       }
       this.setBech32()
       this.qrCodeDialog.show = true
@@ -171,7 +173,8 @@ window.app = Vue.createApp({
           min_bet: 10,
           max_bet: 1000,
           currency: 'satoshis',
-          comment_chars: 0
+          comment_chars: 0,
+          disposable: true,
         }
       }
     },
@@ -190,7 +193,8 @@ window.app = Vue.createApp({
           'success_text',
           'success_url',
           'comment_chars',
-          'currency'
+          'currency',
+          'disposable'
         ),
         (value, key) =>
           (key === 'webhook_url' ||
