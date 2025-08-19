@@ -19,6 +19,9 @@ window.app = Vue.createApp({
   mixins: [windowMixin],
   data() {
     return {
+      tab: 'bech32',
+      url: `${window.location.origin}/satsdice/api/v1/lnurlp`,
+      lnurl: '',
       chanceValue: 0,
       multiValue: 1.5,
       currencies: [],
@@ -62,7 +65,23 @@ window.app = Vue.createApp({
       return this.chanceValue
     }
   },
+  watch: {
+    tab(value) {
+      if (value == 'bech32') {
+        this.setBech32()
+      } else if (value == 'lud17') {
+        const url = `${this.url}/${this.qrCodeDialog.data.id}`
+        this.lnurl = url.replace('https://', 'lnurlp://')
+      }
+    }
+  },
   methods: {
+    setBech32() {
+      const url = `${this.url}/${this.qrCodeDialog.data.id}`
+      const bytes = new TextEncoder().encode(url)
+      const bech32 = NostrTools.nip19.encodeBytes('lnurl', bytes)
+      this.lnurl = `lightning:${bech32.toUpperCase()}`
+    },
     chanceValueTableCalc(multiplier, haircut) {
       return ((1 / multiplier) * 100 - haircut).toFixed(2)
     },
@@ -106,10 +125,10 @@ window.app = Vue.createApp({
               '"' +
               (link.success_url ? ' and URL "' + link.success_url + '"' : '')
             : 'do nothing',
-        lnurl: link.lnurl,
         pay_url: link.pay_url,
         print_url: link.print_url
       }
+      this.setBech32()
       this.qrCodeDialog.show = true
     },
     openUpdateDialog(linkId) {

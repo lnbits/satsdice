@@ -3,16 +3,28 @@
   <div class="col-12 col-sm-6 col-md-5 col-lg-4">
     <q-card class="q-pa-lg">
       <q-card-section class="q-pa-none">
+        <q-card-section>
+          <q-tabs
+            v-model="tab"
+            dense
+            class="text-grey"
+            active-color="primary"
+            indicator-color="primary"
+            align="justify"
+            narrow-indicator
+            inline-label
+          >
+            <q-tab name="bech32" icon="qr_code" label="bech32"></q-tab>
+            <q-tab name="lud17" icon="link" label="url (lud17)"></q-tab>
+          </q-tabs>
+        </q-card-section>
         <div class="text-center">
-          <a class="text-secondary" href="lightning:{{ lnurl }}">
-            <lnbits-qrcode
-              :value="'lightning:{{ lnurl }}'"
-              class="rounded-borders"
-            ></lnbits-qrcode>
+          <a class="text-secondary" :href="lnurl">
+            <lnbits-qrcode :value="lnurl" class="rounded-borders" ></lnbits-qrcode>
           </a>
         </div>
         <div class="row q-mt-lg">
-          <q-btn outline color="grey" @click="copyText('{{ lnurl }}')"
+          <q-btn outline color="grey" @click="copyText(lnurl)"
             >Copy winnings LNURL</q-btn
           >
         </div>
@@ -43,8 +55,32 @@
     mixins: [windowMixin],
     data() {
       return {
-        here: location.protocol + '//' + location.host
+        tab: 'bech32',
+        url: `${window.location.origin}/satsdice/api/v1/lnurlw`,
+        lnurl: '',
+        unique_hash: '{{ unique_hash }}',
       }
+    },
+    methods: {
+        setBech32() {
+          const url = this.url + "/" + this.unique_hash
+          const bytes = new TextEncoder().encode(url)
+          const bech32 = NostrTools.nip19.encodeBytes('lnurl', bytes)
+          this.lnurl = `lightning:${bech32.toUpperCase()}`
+        }
+    },
+    watch: {
+      tab(value) {
+        if (value == 'bech32') {
+          this.setBech32()
+        } else if (value == 'lud17') {
+          const url = this.url + "/" + this.unique_hash
+          this.lnurl = url.replace('https://', 'lnurlp://')
+        }
+      }
+    },
+    created() {
+        this.setBech32()
     }
   })
 </script>

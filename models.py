@@ -43,21 +43,6 @@ class SatsdiceWithdraw(BaseModel):
         return self.used >= 1
 
 
-#     def lnurl_response(self, req: Request):
-#         url = str(
-#             req.url_for("satsdice.api_lnurlw_callback", unique_hash=self.unique_hash)
-#         )
-#         withdraw_response = {
-#             "tag": "withdrawRequest",
-#             "callback": url,
-#             "k1": self.k1,
-#             "minWithdrawable": self.value * 1000,
-#             "maxWithdrawable": self.value * 1000,
-#             "defaultDescription": "Satsdice winnings!",
-#         }
-#         return withdraw_response
-
-
 class HashCheck(BaseModel):
     id: str
     lnurl_id: str
