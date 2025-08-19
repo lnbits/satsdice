@@ -3,7 +3,13 @@
   <div class="col-12 col-sm-6 col-md-5 col-lg-4">
     <q-card class="q-pa-lg">
       <q-card-section class="q-pa-none">
-        <lnbits-qrcode-lnurl :url="url"></lnbits-qrcode-lnurl>
+        <lnbits-qrcode-lnurl
+          :url="url"
+          @update:lnurl="updateLnurl"
+        ></lnbits-qrcode-lnurl>
+        <q-btn outline color="grey" class="q-mt-md" @click="copyText(lnurl)"
+          >Copy winnings LNURL</q-btn
+        >
       </q-card-section>
     </q-card>
   </div>
@@ -31,8 +37,14 @@
     mixins: [windowMixin],
     data() {
       return {
+        lnurl: '',
         url: `${window.location.origin}/satsdice/api/v1/lnurlp/{{ link_id }}`,
         chance: parseFloat('{{ chance }}') + '%'
+      }
+    },
+    methods: {
+      updateLnurl(value) {
+        this.lnurl = value
       }
     },
     filters: {
