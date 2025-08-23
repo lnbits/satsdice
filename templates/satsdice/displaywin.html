@@ -3,16 +3,31 @@
   <div class="col-12 col-sm-6 col-md-5 col-lg-4">
     <q-card class="q-pa-lg">
       <q-card-section class="q-pa-none">
+        <q-card-section>
+          <q-tabs
+            v-model="tab"
+            dense
+            class="text-grey"
+            active-color="primary"
+            indicator-color="primary"
+            align="justify"
+            narrow-indicator
+            inline-label
+          >
+            <q-tab name="bech32" icon="qr_code" label="bech32"></q-tab>
+            <q-tab name="lud17" icon="link" label="url (lud17)"></q-tab>
+          </q-tabs>
+        </q-card-section>
         <div class="text-center">
-          <a class="text-secondary" href="lightning:{{ lnurl }}">
-            <lnbits-qrcode
-              :value="'lightning:{{ lnurl }}'"
-              class="rounded-borders"
-            ></lnbits-qrcode>
+          <a class="text-secondary" :href="lnurl">
+            <lnbits-qrcode-lnurl
+              :url="url"
+              @update:lnurl="v => lnurl = v"
+            ></lnbits-qrcode-lnurl>
           </a>
         </div>
         <div class="row q-mt-lg">
-          <q-btn outline color="grey" @click="copyText('{{ lnurl }}')"
+          <q-btn outline color="grey" @click="copyText(lnurl)"
             >Copy winnings LNURL</q-btn
           >
         </div>
@@ -43,7 +58,8 @@
     mixins: [windowMixin],
     data() {
       return {
-        here: location.protocol + '//' + location.host
+        url: `${window.location.origin}/satsdice/api/v1/lnurlw/{{ unique_hash }}`,
+        lnurl: ''
       }
     }
   })

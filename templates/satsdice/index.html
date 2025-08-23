@@ -171,6 +171,20 @@
           ></q-slider>
         </center>
 
+        <h5 class="text-caption q-mt-sm q-mb-none">
+          LUD-11: Disposable and storeable payRequests.
+        </h5>
+        <div class="row">
+          <div class="col-12">
+            <q-checkbox
+              dense
+              :toggle-indeterminate="false"
+              v-model="formDialog.data.disposable"
+              label="If enabled, the LNURL will not be stored (default)."
+            />
+          </div>
+        </div>
+
         <div class="row q-mt-lg">
           <q-btn
             v-if="formDialog.data.id"
@@ -199,10 +213,11 @@
 
   <q-dialog v-model="qrCodeDialog.show" position="top">
     <q-card v-if="qrCodeDialog.data" class="q-pa-lg lnbits__dialog-card">
-      <lnbits-qrcode
-        :value="'lightning:' + qrCodeDialog.data.lnurl"
-        class="rounded-borders"
-      ></lnbits-qrcode>
+      <lnbits-qrcode-lnurl
+        class="q-mb-md"
+        :url="activeUrl"
+        @update:lnurl="v => lnurl = v"
+      ></lnbits-qrcode-lnurl>
       <p style="word-break: break-all">
         <strong>ID:</strong> <span v-text="qrCodeDialog.data.id"></span><br />
         <strong>Amount:</strong> <span v-text="qrCodeDialog.data.amount"></span
@@ -227,7 +242,7 @@
         <q-btn
           outline
           color="grey"
-          @click="copyText(qrCodeDialog.data.lnurl, 'Satsdice copied to clipboard!')"
+          @click="copyText(lnurl, 'Satsdice copied to clipboard!')"
           class="q-ml-sm"
           >Copy Satsdice LNURL</q-btn
         >
@@ -238,7 +253,6 @@
           @click="copyText(qrCodeDialog.data.pay_url, 'Link copied to clipboard!')"
           ><q-tooltip>Copy shareable link</q-tooltip></q-btn
         >
-
         <q-btn
           outline
           color="grey"

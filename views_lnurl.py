@@ -1,3 +1,4 @@
+import json
 import math
 from http import HTTPStatus
 
@@ -6,6 +7,20 @@ from lnbits.core.services import (
     create_invoice,
     pay_invoice,
 )
+from lnurl import (
+    CallbackUrl,
+    LightningInvoice,
+    LnurlErrorResponse,
+    LnurlPayActionResponse,
+    LnurlPayMetadata,
+    LnurlPayResponse,
+    LnurlSuccessResponse,
+    LnurlWithdrawResponse,
+    Max144Str,
+    MilliSatoshi,
+    UrlAction,
+)
+from pydantic import parse_obj_as
 
 from .crud import (
     create_satsdice_payment,
@@ -22,56 +37,61 @@ satsdice_lnurl_router = APIRouter()
     "/api/v1/lnurlp/{link_id}",
     name="satsdice.lnurlp_response",
 )
-async def api_lnurlp_response(req: Request, link_id: str):
+async def api_lnurlp_response(
+    req: Request, link_id: str
+) -> LnurlPayResponse | LnurlErrorResponse:
     link = await get_satsdice_pay(link_id)
     if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="LNURL-pay not found."
-        )
-    return {
-        "tag": "payRequest",
-        "callback": str(req.url_for("satsdice.api_lnurlp_callback", link_id=link.id)),
-        "metadata": link.lnurlpay_metadata,
-        "minSendable": math.ceil(link.min_bet * 1) * 1000,
-        "maxSendable": round(link.max_bet * 1) * 1000,
-    }
+        return LnurlErrorResponse(reason="LNURL-pay not found.")
+    callback_url = str(req.url_for("satsdice.api_lnurlp_callback", link_id=link.id))
+    _plain = [
+        "text/plain",
+        f"{link.title} (Chance: {link.chance}%, Multiplier: {link.multiplier})",
+    ]
+    return LnurlPayResponse(
+        callback=parse_obj_as(CallbackUrl, callback_url),
+        metadata=LnurlPayMetadata(json.dumps([_plain])),
+        minSendable=MilliSatoshi(math.ceil(link.min_bet * 1) * 1000),
+        maxSendable=MilliSatoshi(round(link.max_bet * 1) * 1000),
+    )
 
 
 @satsdice_lnurl_router.get(
     "/api/v1/lnurlp/cb/{link_id}",
     name="satsdice.api_lnurlp_callback",
 )
-async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(None)):
+async def api_lnurlp_callback(
+    req: Request, link_id: str, amount: str = Query(None)
+) -> LnurlErrorResponse | LnurlPayActionResponse:
     link = await get_satsdice_pay(link_id)
     if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="LNURL-pay not found."
-        )
+        return LnurlErrorResponse(reason="LNURL-pay not found.")
 
     min_bet = link.min_bet * 1000
     max_bet = link.max_bet * 1000
 
     amount_received = int(amount or 0)
     if amount_received < min_bet:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail=f"Amount {amount_received} is smaller than minimum {min_bet}.",
+        return LnurlErrorResponse(
+            reason=f"Amount {amount_received} is smaller than minimum {min_bet}."
         )
     elif amount_received > max_bet:
-        raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN,
-            detail=f"Amount {amount_received} is greater than maximum {max_bet}.",
+        return LnurlErrorResponse(
+            reason=f"Amount {amount_received} is greater than maximum {max_bet}."
         )
 
+    _plain = [
+        "text/plain",
+        f"{link.title} (Chance: {link.chance}%, Multiplier: {link.multiplier})",
+    ]
+    _metadata = LnurlPayMetadata(json.dumps([_plain]))
     payment = await create_invoice(
         wallet_id=link.wallet,
         amount=int(amount_received / 1000),
         memo="Satsdice bet",
-        unhashed_description=link.lnurlpay_metadata.encode(),
+        unhashed_description=_metadata.encode(),
         extra={"tag": "satsdice", "link": link.id, "comment": "comment"},
     )
-
-    success_action = link.success_action(payment_hash=payment.payment_hash, req=req)
 
     data = CreateSatsDicePayment(
         satsdice_pay=link.id,
@@ -81,11 +101,18 @@ async def api_lnurlp_callback(req: Request, link_id: str, amount: str = Query(No
 
     await create_satsdice_payment(data)
 
-    return {
-        "pr": payment.bolt11,
-        "successAction": success_action,
-        "routes": [],
-    }
+    url = str(
+        req.url_for(
+            "satsdice.displaywin", link_id=link.id, payment_hash=payment.payment_hash
+        )
+    )
+    msg = parse_obj_as(Max144Str, "Check the attached link")
+    success_action = UrlAction(url=parse_obj_as(CallbackUrl, url), description=msg)
+    return LnurlPayActionResponse(
+        pr=parse_obj_as(LightningInvoice, payment.bolt11),
+        successAction=success_action,
+        disposable=link.disposable,
+    )
 
 
 @satsdice_lnurl_router.get(
@@ -101,15 +128,15 @@ async def api_lnurlw_response(req: Request, unique_hash: str):
         )
     if link.used:
         raise HTTPException(status_code=HTTPStatus.OK, detail="satsdice is spent.")
+
     url = str(req.url_for("satsdice.api_lnurlw_callback", unique_hash=link.unique_hash))
-    return {
-        "tag": "withdrawRequest",
-        "callback": url,
-        "k1": link.k1,
-        "minWithdrawable": link.value * 1000,
-        "maxWithdrawable": link.value * 1000,
-        "defaultDescription": "Satsdice winnings!",
-    }
+    return LnurlWithdrawResponse(
+        callback=parse_obj_as(CallbackUrl, url),
+        k1=link.k1,
+        minWithdrawable=MilliSatoshi(link.value * 1000),
+        maxWithdrawable=MilliSatoshi(link.value * 1000),
+        defaultDescription="Satsdice winnings!",
+    )
 
 
 @satsdice_lnurl_router.get(
@@ -120,17 +147,16 @@ async def api_lnurlw_response(req: Request, unique_hash: str):
 async def api_lnurlw_callback(
     unique_hash: str,
     pr: str = Query(None),
-):
-
+) -> LnurlSuccessResponse | LnurlErrorResponse:
     link = await get_satsdice_withdraw_by_hash(unique_hash)
     if not link:
-        return {"status": "ERROR", "reason": "no withdraw"}
+        return LnurlErrorResponse(reason="Withdraw not found.")
     if link.used:
-        return {"status": "ERROR", "reason": "spent"}
+        return LnurlErrorResponse(reason="Withdraw already used.")
     paylink = await get_satsdice_pay(link.satsdice_pay)
 
     if not paylink:
-        return {"status": "ERROR", "reason": "no paylink found"}
+        return LnurlErrorResponse(reason="No paylink found.")
 
     link.used = True
     await update_satsdice_withdraw(link)
@@ -145,6 +171,6 @@ async def api_lnurlw_callback(
         # If the payment failed, we need to reset the withdraw to unused
         link.used = False
         await update_satsdice_withdraw(link)
-        return {"status": "ERROR", "reason": str(exc)}
+        return LnurlErrorResponse(reason=str(exc))
 
-    return {"status": "OK"}
+    return LnurlSuccessResponse()

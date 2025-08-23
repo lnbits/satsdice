@@ -19,6 +19,9 @@ window.app = Vue.createApp({
   mixins: [windowMixin],
   data() {
     return {
+      url: `${window.location.origin}/satsdice/api/v1/lnurlp`,
+      activeUrl: '',
+      lnurl: '',
       chanceValue: 0,
       multiValue: 1.5,
       currencies: [],
@@ -38,7 +41,8 @@ window.app = Vue.createApp({
           min_bet: 10,
           max_bet: 1000,
           currency: 'satoshis',
-          comment_chars: 0
+          comment_chars: 0,
+          disposable: true
         }
       },
       qrCodeDialog: {
@@ -106,10 +110,11 @@ window.app = Vue.createApp({
               '"' +
               (link.success_url ? ' and URL "' + link.success_url + '"' : '')
             : 'do nothing',
-        lnurl: link.lnurl,
         pay_url: link.pay_url,
-        print_url: link.print_url
+        print_url: link.print_url,
+        disposable: link.disposable
       }
+      this.activeUrl = `${this.url}/${this.qrCodeDialog.data.id}`
       this.qrCodeDialog.show = true
     },
     openUpdateDialog(linkId) {
@@ -152,7 +157,8 @@ window.app = Vue.createApp({
           min_bet: 10,
           max_bet: 1000,
           currency: 'satoshis',
-          comment_chars: 0
+          comment_chars: 0,
+          disposable: true
         }
       }
     },
@@ -171,7 +177,8 @@ window.app = Vue.createApp({
           'success_text',
           'success_url',
           'comment_chars',
-          'currency'
+          'currency',
+          'disposable'
         ),
         (value, key) =>
           (key === 'webhook_url' ||

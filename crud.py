@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional, Union
 
 from lnbits.db import Database
 from lnbits.helpers import urlsafe_short_hash
@@ -25,7 +24,7 @@ async def create_satsdice_pay(data: CreateSatsDiceLink) -> SatsdiceLink:
     return satsdice
 
 
-async def get_satsdice_pay(link_id: str) -> Optional[SatsdiceLink]:
+async def get_satsdice_pay(link_id: str) -> SatsdiceLink | None:
     return await db.fetchone(
         "SELECT * FROM satsdice.satsdice_pay WHERE id = :id",
         {"id": link_id},
@@ -33,7 +32,7 @@ async def get_satsdice_pay(link_id: str) -> Optional[SatsdiceLink]:
     )
 
 
-async def get_satsdice_pays(wallet_ids: Union[str, list[str]]) -> list[SatsdiceLink]:
+async def get_satsdice_pays(wallet_ids: str | list[str]) -> list[SatsdiceLink]:
     if isinstance(wallet_ids, str):
         wallet_ids = [wallet_ids]
 
@@ -61,7 +60,7 @@ async def create_satsdice_payment(data: CreateSatsDicePayment) -> SatsdicePaymen
     return payment
 
 
-async def get_satsdice_payment(payment_hash: str) -> Optional[SatsdicePayment]:
+async def get_satsdice_payment(payment_hash: str) -> SatsdicePayment | None:
     return await db.fetchone(
         "SELECT * FROM satsdice.satsdice_payment WHERE payment_hash = :payment_hash",
         {"payment_hash": payment_hash},
@@ -92,7 +91,7 @@ async def create_satsdice_withdraw(data: CreateSatsDiceWithdraw) -> SatsdiceWith
     return withdraw
 
 
-async def get_satsdice_withdraw(withdraw_id: str) -> Optional[SatsdiceWithdraw]:
+async def get_satsdice_withdraw(withdraw_id: str) -> SatsdiceWithdraw | None:
     return await db.fetchone(
         "SELECT * FROM satsdice.satsdice_withdraw WHERE id = :id",
         {"id": withdraw_id},
@@ -100,7 +99,7 @@ async def get_satsdice_withdraw(withdraw_id: str) -> Optional[SatsdiceWithdraw]:
     )
 
 
-async def get_satsdice_withdraw_by_hash(unique_hash: str) -> Optional[SatsdiceWithdraw]:
+async def get_satsdice_withdraw_by_hash(unique_hash: str) -> SatsdiceWithdraw | None:
     return await db.fetchone(
         "SELECT * FROM satsdice.satsdice_withdraw WHERE unique_hash = :unique_hash",
         {"unique_hash": unique_hash},
@@ -109,7 +108,7 @@ async def get_satsdice_withdraw_by_hash(unique_hash: str) -> Optional[SatsdiceWi
 
 
 async def get_satsdice_withdraws(
-    wallet_ids: Union[str, list[str]]
+    wallet_ids: str | list[str],
 ) -> list[SatsdiceWithdraw]:
     if isinstance(wallet_ids, str):
         wallet_ids = [wallet_ids]
