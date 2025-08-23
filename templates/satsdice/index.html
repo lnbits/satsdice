@@ -216,7 +216,7 @@
       <lnbits-qrcode-lnurl
         class="q-mb-md"
         :url="activeUrl"
-        @update:lnurl="updateLnurl"
+        @update:lnurl="v => lnurl = v"
       ></lnbits-qrcode-lnurl>
       <p style="word-break: break-all">
         <strong>ID:</strong> <span v-text="qrCodeDialog.data.id"></span><br />

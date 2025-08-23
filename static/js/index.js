@@ -67,9 +67,6 @@ window.app = Vue.createApp({
     }
   },
   methods: {
-    updateLnurl(value) {
-      this.lnurl = value
-    },
     chanceValueTableCalc(multiplier, haircut) {
       return ((1 / multiplier) * 100 - haircut).toFixed(2)
     },

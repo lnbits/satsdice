@@ -5,7 +5,7 @@
       <q-card-section class="q-pa-none">
         <lnbits-qrcode-lnurl
           :url="url"
-          @update:lnurl="updateLnurl"
+          @update:lnurl="v => lnurl = v"
         ></lnbits-qrcode-lnurl>
         <q-btn outline color="grey" class="q-mt-md" @click="copyText(lnurl)"
           >Copy winnings LNURL</q-btn
@@ -40,11 +40,6 @@
         lnurl: '',
         url: `${window.location.origin}/satsdice/api/v1/lnurlp/{{ link_id }}`,
         chance: parseFloat('{{ chance }}') + '%'
-      }
-    },
-    methods: {
-      updateLnurl(value) {
-        this.lnurl = value
       }
     },
     filters: {
