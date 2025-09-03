@@ -2,7 +2,7 @@ import json
 import math
 from http import HTTPStatus
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, Query, Request
 from lnbits.core.services import (
     create_invoice,
     pay_invoice,
@@ -119,15 +119,16 @@ async def api_lnurlp_callback(
     "/api/v1/lnurlw/{unique_hash}",
     name="satsdice.lnurlw_response",
 )
-async def api_lnurlw_response(req: Request, unique_hash: str):
+async def api_lnurlw_response(
+    req: Request, unique_hash: str
+) -> LnurlWithdrawResponse | LnurlErrorResponse:
     link = await get_satsdice_withdraw_by_hash(unique_hash)
 
     if not link:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="LNURL-satsdice not found."
-        )
+        return LnurlErrorResponse(reason="LNURL-satsdice not found.")
+
     if link.used:
-        raise HTTPException(status_code=HTTPStatus.OK, detail="satsdice is spent.")
+        return LnurlErrorResponse(reason="Withdraw already used.")
 
     url = str(req.url_for("satsdice.api_lnurlw_callback", unique_hash=link.unique_hash))
     return LnurlWithdrawResponse(
@@ -147,7 +148,7 @@ async def api_lnurlw_response(req: Request, unique_hash: str):
 async def api_lnurlw_callback(
     unique_hash: str,
     pr: str = Query(None),
-) -> LnurlSuccessResponse | LnurlErrorResponse:
+) -> LnurlErrorResponse | LnurlSuccessResponse:
     link = await get_satsdice_withdraw_by_hash(unique_hash)
     if not link:
         return LnurlErrorResponse(reason="Withdraw not found.")
