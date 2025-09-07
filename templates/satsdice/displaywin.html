@@ -3,7 +3,7 @@
   <div class="col-12 col-sm-6 col-md-5 col-lg-4">
     <q-card class="q-pa-lg">
       <q-card-section class="q-pa-none">
-        <lnbits-qrcode-lnurl :url="url" prefix="lnurlw"></lnbits-qrcode-lnurl>
+        <lnbits-qrcode-lnurl :url="url + '{{ unique_hash }}'" prefix="lnurlw"></lnbits-qrcode-lnurl>
       </q-card-section>
       <h2 class="text-subtitle1 q-mb-sm q-mt-none">
         Congrats! You have won {{ value }}sats (you must claim the sats now)
@@ -34,7 +34,7 @@
     mixins: [windowMixin],
     data() {
       return {
-        url: `${window.location.origin}/satsdice/api/v1/lnurlw/{{ unique_hash }}`
+        url: `${window.location.origin}/satsdice/api/v1/lnurlw/`
       }
     }
   })
