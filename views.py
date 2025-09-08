@@ -107,6 +107,7 @@ async def displaywin(request: Request, link_id: str, payment_hash: str):
         "satsdice/displaywin.html",
         {
             "request": request,
+            "unique_hash": withdraw_link.unique_hash,
             "value": withdraw_link.value,
             "chance": satsdicelink.chance,
             "multiplier": satsdicelink.multiplier,
