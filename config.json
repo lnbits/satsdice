@@ -1,11 +1,12 @@
 {
   "id": "satsdice",
-  "name": "Sats Dice",
-  "short_description": "LNURL Satoshi dice",
-  "tile": "/satsdice/static/image/satsdice.png",
   "version": "1.1.1",
+  "name": "Sats Dice",
+  "repo": "https://github.com/lnbits/satsdice",
+  "short_description": "LNURL Satoshi dice",
+  "description": "",
+  "tile": "/satsdice/static/image/satsdice.png",
   "min_lnbits_version": "1.3.0",
-  "tags": ["gambling"],
   "contributors": [
     {
       "name": "arcbtc",
@@ -30,7 +31,7 @@
   ],
   "images": [
     {
-      "uri": "https://raw.githubusercontent.com/lnbits/satsdice/main/static/image/1.jpg",
+      "uri": "https://raw.githubusercontent.com/lnbits/satsdice/main/static/image/Satsdice_thumbnail.png",
       "link": "https://www.youtube.com/embed/3f7RBIpTFlw?si=QuAhFPSYNrYiFZJe"
     },
     {
@@ -45,5 +46,9 @@
   ],
   "description_md": "https://raw.githubusercontent.com/lnbits/satsdice/main/description.md",
   "terms_and_conditions_md": "https://raw.githubusercontent.com/lnbits/satsdice/main/toc.md",
-  "license": "MIT"
+  "license": "MIT",
+  "paid_features": "",
+  "tags": ["Gambling"],
+  "donate": "",
+  "hidden": false
 }
