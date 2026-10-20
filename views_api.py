@@ -55,7 +55,7 @@ async def api_create_satsdice_link(
     data: CreateSatsDiceLink,
     wallet: WalletTypeInfo = Depends(require_admin_key),
 ) -> SatsdiceLink:
-    if data.min_bet > data.max_bet:
+    if data.min_bet is None or data.max_bet is None or data.min_bet > data.max_bet:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
 
     if data.wallet and data.wallet != wallet.wallet.id:
@@ -87,11 +87,11 @@ async def api_update_satsdice_link(
             detail="Come on, seriously, this isn't your satsdice!",
         )
 
-    if data.min_bet > data.max_bet:
+    if data.min_bet is None or data.max_bet is None or data.min_bet > data.max_bet:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Bad request")
 
     data.wallet = data.wallet or wallet.wallet.id
-    for k, v in data.dict().items():
+    for k, v in data.model_dump().items():
         setattr(link, k, v)
     link = await update_satsdice_pay(link)
     return link

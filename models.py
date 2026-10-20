@@ -50,11 +50,11 @@ class HashCheck(BaseModel):
 
 
 class CreateSatsDiceLink(BaseModel):
-    wallet: str = Query(None)
-    title: str = Query(None)
-    base_url: str = Query(None)
-    min_bet: int = Query(None)
-    max_bet: int = Query(None)
+    wallet: str | None = Query(None)
+    title: str | None = Query(None)
+    base_url: str | None = Query(None)
+    min_bet: int | None = Query(None)
+    max_bet: int | None = Query(None)
     multiplier: float = Query(0)
     chance: float = Query(0)
     haircut: float = Query(0)
@@ -62,22 +62,22 @@ class CreateSatsDiceLink(BaseModel):
 
 
 class CreateSatsDicePayment(BaseModel):
-    satsdice_pay: str = Query(None)
+    satsdice_pay: str | None = Query(None)
     value: int = Query(0)
-    payment_hash: str = Query(None)
+    payment_hash: str | None = Query(None)
 
 
 class CreateSatsDiceWithdraw(BaseModel):
-    payment_hash: str = Query(None)
-    satsdice_pay: str = Query(None)
+    payment_hash: str | None = Query(None)
+    satsdice_pay: str | None = Query(None)
     value: int = Query(0)
     used: int = Query(0)
 
 
 class CreateSatsDiceWithdraws(BaseModel):
-    title: str = Query(None)
+    title: str | None = Query(None)
     min_satsdiceable: int = Query(0)
     max_satsdiceable: int = Query(0)
     uses: int = Query(0)
-    wait_time: str = Query(None)
+    wait_time: str | None = Query(None)
     is_unique: bool = Query(False)
