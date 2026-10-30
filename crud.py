@@ -18,7 +18,7 @@ db = Database("ext_satsdice")
 async def create_satsdice_pay(data: CreateSatsDiceLink) -> SatsdiceLink:
     satsdice = SatsdiceLink(
         id=urlsafe_short_hash(),
-        **data.dict(),
+        **data.model_dump(),
     )
     await db.insert("satsdice.satsdice_pay", satsdice)
     return satsdice
@@ -55,7 +55,7 @@ async def delete_satsdice_pay(link_id: str) -> None:
 
 
 async def create_satsdice_payment(data: CreateSatsDicePayment) -> SatsdicePayment:
-    payment = SatsdicePayment(**data.dict())
+    payment = SatsdicePayment(**data.model_dump())
     await db.insert("satsdice.satsdice_payment", payment)
     return payment
 
@@ -78,14 +78,14 @@ async def update_satsdice_payment(payment: SatsdicePayment) -> SatsdicePayment:
 
 
 async def create_satsdice_withdraw(data: CreateSatsDiceWithdraw) -> SatsdiceWithdraw:
-    withdraw = SatsdiceWithdraw(
-        unique_hash=urlsafe_short_hash(),
-        k1=urlsafe_short_hash(),
-        open_time=int(datetime.now().timestamp()),
-        id=data.payment_hash,
-        satsdice_pay=data.satsdice_pay,
-        value=data.value,
-        used=data.used,
+    withdraw = SatsdiceWithdraw.model_validate(
+        {
+            **data.model_dump(exclude={"payment_hash"}),
+            "id": data.payment_hash,
+            "unique_hash": urlsafe_short_hash(),
+            "k1": urlsafe_short_hash(),
+            "open_time": int(datetime.now().timestamp()),
+        }
     )
     await db.insert("satsdice.satsdice_withdraw", withdraw)
     return withdraw

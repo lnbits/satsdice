@@ -20,7 +20,7 @@ from lnurl import (
     MilliSatoshi,
     UrlAction,
 )
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 from .crud import (
     create_satsdice_payment,
@@ -49,7 +49,7 @@ async def api_lnurlp_response(
         f"{link.title} (Chance: {link.chance}%, Multiplier: {link.multiplier})",
     ]
     return LnurlPayResponse(
-        callback=parse_obj_as(CallbackUrl, callback_url),
+        callback=TypeAdapter(CallbackUrl).validate_python(callback_url),
         metadata=LnurlPayMetadata(json.dumps([_plain])),
         minSendable=MilliSatoshi(math.ceil(link.min_bet * 1) * 1000),
         maxSendable=MilliSatoshi(round(link.max_bet * 1) * 1000),
@@ -106,10 +106,12 @@ async def api_lnurlp_callback(
             "satsdice.displaywin", link_id=link.id, payment_hash=payment.payment_hash
         )
     )
-    msg = parse_obj_as(Max144Str, "Check the attached link")
-    success_action = UrlAction(url=parse_obj_as(CallbackUrl, url), description=msg)
+    msg = TypeAdapter(Max144Str).validate_python("Check the attached link")
+    success_action = UrlAction(
+        url=TypeAdapter(CallbackUrl).validate_python(url), description=msg
+    )
     return LnurlPayActionResponse(
-        pr=parse_obj_as(LightningInvoice, payment.bolt11),
+        pr=TypeAdapter(LightningInvoice).validate_python(payment.bolt11),
         successAction=success_action,
         disposable=link.disposable,
     )
@@ -132,7 +134,7 @@ async def api_lnurlw_response(
 
     url = str(req.url_for("satsdice.api_lnurlw_callback", unique_hash=link.unique_hash))
     return LnurlWithdrawResponse(
-        callback=parse_obj_as(CallbackUrl, url),
+        callback=TypeAdapter(CallbackUrl).validate_python(url),
         k1=link.k1,
         minWithdrawable=MilliSatoshi(link.value * 1000),
         maxWithdrawable=MilliSatoshi(link.value * 1000),
