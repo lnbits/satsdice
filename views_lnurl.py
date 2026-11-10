@@ -36,6 +36,7 @@ satsdice_lnurl_router = APIRouter()
 @satsdice_lnurl_router.get(
     "/api/v1/lnurlp/{link_id}",
     name="satsdice.lnurlp_response",
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurlp_response(
     req: Request, link_id: str
@@ -59,6 +60,7 @@ async def api_lnurlp_response(
 @satsdice_lnurl_router.get(
     "/api/v1/lnurlp/cb/{link_id}",
     name="satsdice.api_lnurlp_callback",
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurlp_callback(
     req: Request, link_id: str, amount: str = Query(None)
@@ -120,6 +122,7 @@ async def api_lnurlp_callback(
 @satsdice_lnurl_router.get(
     "/api/v1/lnurlw/{unique_hash}",
     name="satsdice.lnurlw_response",
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurlw_response(
     req: Request, unique_hash: str
@@ -146,6 +149,7 @@ async def api_lnurlw_response(
     "/api/v1/lnurlw/cb/{unique_hash}",
     status_code=HTTPStatus.OK,
     name="satsdice.api_lnurlw_callback",
+    openapi_extra={"x-lnbits-local-lnurl": True},
 )
 async def api_lnurlw_callback(
     unique_hash: str,
