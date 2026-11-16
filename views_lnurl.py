@@ -23,6 +23,7 @@ from lnurl import (
 from pydantic import TypeAdapter
 
 from .crud import (
+    claim_satsdice_withdraw,
     create_satsdice_payment,
     get_satsdice_pay,
     get_satsdice_withdraw_by_hash,
@@ -165,8 +166,8 @@ async def api_lnurlw_callback(
     if not paylink:
         return LnurlErrorResponse(reason="No paylink found.")
 
-    link.used = True
-    await update_satsdice_withdraw(link)
+    if not await claim_satsdice_withdraw(link.id):
+        return LnurlErrorResponse(reason="Withdraw already used.")
 
     try:
         await pay_invoice(
