@@ -68,13 +68,15 @@ async def get_satsdice_payment(payment_hash: str) -> SatsdicePayment | None:
     )
 
 
-async def update_satsdice_payment(payment: SatsdicePayment) -> SatsdicePayment:
-    await db.update(
-        "satsdice.satsdice_payment",
-        payment,
-        "WHERE payment_hash = :payment_hash",
+async def update_satsdice_payment(payment: SatsdicePayment) -> bool:
+    result = await db.execute(
+        """
+        UPDATE satsdice.satsdice_payment SET paid = :paid, lost = :lost
+        WHERE payment_hash = :payment_hash AND paid = false AND lost = false
+        """,
+        payment.model_dump(),
     )
-    return payment
+    return result.rowcount == 1
 
 
 async def create_satsdice_withdraw(data: CreateSatsDiceWithdraw) -> SatsdiceWithdraw:
@@ -123,6 +125,17 @@ async def get_satsdice_withdraws(
 async def update_satsdice_withdraw(withdraw: SatsdiceWithdraw) -> SatsdiceWithdraw:
     await db.update("satsdice.satsdice_withdraw", withdraw)
     return withdraw
+
+
+async def claim_satsdice_withdraw(withdraw_id: str) -> bool:
+    result = await db.execute(
+        """
+        UPDATE satsdice.satsdice_withdraw SET used = 1
+        WHERE id = :id AND used = 0
+        """,
+        {"id": withdraw_id},
+    )
+    return result.rowcount == 1
 
 
 async def delete_satsdice_withdraw(withdraw_id: str) -> None:
